@@ -39,6 +39,20 @@ when the separate `../shaduler` repo was folded in).
 
 ## Open work (TODO)
 
+### Marketing / positioning
+
+- **Landing page live demo** — `app/(home)/page.tsx` is hero + buttons only.
+  Embed a live `<Shaduler />` (probably one of the `components/demos/` ones)
+  above the fold so the value is visible without clicking into `/docs`.
+- **GitHub README imagery** — `README.md` is text-only. Add screenshots / GIFs
+  near the top (full-customization demo + a plain grid) so the GitHub landing
+  has visual proof of what the thing looks like.
+- **"Where shaduler loses (today)" section** — honest-tradeoffs page/section
+  listing weaknesses vs. FullCalendar / Schedule-X / etc. Likely its own MDX
+  page in docs, possibly also surfaced on the landing. Needs user input on
+  which specific gaps to call out (month view, recurring events, …) — don't
+  draft it solo.
+
 ### `/preview` page (theme picker)
 
 - **Shuffle button** — random combination of palette / accent / font / radius,
