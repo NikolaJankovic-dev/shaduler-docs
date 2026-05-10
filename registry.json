@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "shaduler",
+  "homepage": "https://github.com/nikola-jankovic/shaduler",
+  "items": [
+    {
+      "name": "shaduler",
+      "type": "registry:ui",
+      "title": "shaduler",
+      "description": "A composable scheduler grid for placing tasks across columns and time slots. Display-only by default; opt in to drag, resize, and drag-to-create through headless hooks.",
+      "files": [
+        {
+          "path": "components/ui/shaduler.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/shaduler.tsx"
+        }
+      ],
+      "dependencies": [
+        "class-variance-authority"
+      ],
+      "registryDependencies": []
+    }
+  ]
+}

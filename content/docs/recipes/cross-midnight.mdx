@@ -1,0 +1,79 @@
+---
+title: Cross-midnight events
+description: A single canonical event split into two visual rows by a small helper. Click either half resolves to the same source.
+---
+
+Shaduler is a **time-of-day** grid — its rows go 00:00 → 24:00. An event that crosses midnight (gala 22:00 → next-day 02:00) doesn't fit a single row. Solution: keep one canonical event in your data and **split it at the data layer** into two `ShadulerTaskData` rows.
+
+<Preview>
+  <DemoCrossMidnight />
+</Preview>
+
+Add a `canonicalId` field that points back to the source event. Both halves carry the same value — click either and you can dispatch one action to your real data.
+
+```tsx
+const START_HOUR = 0          // full day grid
+const END_HOUR = 24
+const HOUR_HEIGHT_PX = 24     // tight rows since we're showing 24 of them
+const TIME_COLUMN_WIDTH_PX = 64
+
+type CanonicalEvent = {
+  id: string
+  name: string
+  startDay: string  // ShadulerColumn id
+  startTime: string // 'HH:MM'
+  endDay: string
+  endTime: string
+}
+
+type SplitTask = ShadulerTaskData & { canonicalId: string }
+
+function splitAcrossMidnight(event: CanonicalEvent): SplitTask[] {
+  if (event.startDay === event.endDay) {
+    return [{ id: event.id, canonicalId: event.id, column: event.startDay,
+              name: event.name, startTime: event.startTime, endTime: event.endTime }]
+  }
+  return [
+    {
+      id: `${event.id}__part-1`,
+      canonicalId: event.id,
+      column: event.startDay,
+      name: `${event.name} →`,
+      startTime: event.startTime,
+      endTime: '23:59',
+    },
+    {
+      id: `${event.id}__part-2`,
+      canonicalId: event.id,
+      column: event.endDay,
+      name: `← ${event.name}`,
+      startTime: '00:00',
+      endTime: event.endTime,
+    },
+  ]
+}
+
+// Then feed Shaduler the split list:
+const tasks = events.flatMap(splitAcrossMidnight)
+const calc = calculateShadulerData<SplitTask>(
+  columns,
+  tasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+  { timeColumnWidth: TIME_COLUMN_WIDTH_PX },
+)
+```
+
+In your `onClick` handler, read `pos.task.canonicalId` to find the source event:
+
+```tsx
+<ShadulerTask
+  task={pos.task}
+  position={pos}
+  onClick={() => handleClickSource(pos.task.canonicalId)}
+  ...
+/>
+```
+
+The library stays time-of-day; the splitting lives entirely in user code. For multi-day events spanning more than two days (e.g. a 3-day workshop), use [`ShadulerAllDayStrip`](/docs/recipes/all-day) instead — those events live above the hourly grid.

@@ -1,0 +1,37 @@
+---
+title: Custom row labels
+description: Render shift names instead of clock times — the time-domain math is untouched.
+---
+
+The vertical axis is still time-based — tasks still use `HH:MM` strings, snapping still works. But the time column can render anything you want: shift names, breakpoints, milestone markers.
+
+<Preview>
+  <DemoCustomLabels />
+</Preview>
+
+Pass children to `ShadulerTimeColumn` to take over rendering. Each child should be a `ShadulerTimeSlot` so positioning still aligns to the rows.
+
+```tsx
+const HOUR_HEIGHT_PX = 60
+
+<ShadulerTimeColumn rows={calc.rows}>
+  {calc.rows.map((row, i) => {
+    const { label, tone } = shiftFor(row.hour) // your mapping
+    return (
+      <ShadulerTimeSlot
+        key={row.startMinutes}
+        hour={row.hour}
+        durationMinutes={row.durationMinutes}
+        hourIndex={i}
+        hourHeight={HOUR_HEIGHT_PX}
+      >
+        <div className={cn('absolute …', tone)}>
+          {label}
+        </div>
+      </ShadulerTimeSlot>
+    )
+  })}
+</ShadulerTimeColumn>
+```
+
+Tasks below still position from `startTime`/`endTime` — drag, resize, snapping all keep working because they reason about minutes, not labels.

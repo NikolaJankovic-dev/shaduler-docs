@@ -1,0 +1,73 @@
+---
+title: Grouped columns
+description: Two-row header — outer cells span groups (days, regions, teams), inner cells are individual columns.
+---
+
+The header strip is just CSS Grid, so you can render two rows of headers inside the same `ShadulerColumnsHeader`. Pass `gridTemplateRows: 'auto auto'` via `style`, then place group cells in row 1 with a `grid-column` span and the leaf columns in row 2.
+
+<Preview>
+  <DemoGroupedColumns />
+</Preview>
+
+The body grid still sees one flat list of columns (`mon-a`, `mon-b`, …, `wed-c`). Grouping is purely a header-rendering concern — drag, overlap, and scrolling all keep working with no extra config.
+
+```tsx
+const dayGroups = [
+  { id: 'mon', label: 'Mon 9 Dec' },
+  { id: 'tue', label: 'Tue 10 Dec' },
+  { id: 'wed', label: 'Wed 11 Dec' },
+]
+const resourcesPerDay = ['A', 'B', 'C']
+
+// Compound IDs keep the grid columns independent.
+const columns = dayGroups.flatMap((day) =>
+  resourcesPerDay.map((r) => ({
+    id: `${day.id}-${r.toLowerCase()}`,
+    label: r,
+  })),
+)
+
+// Tasks reference the compound id:
+const tasks = [
+  { id: 1, column: 'mon-a', name: 'Standup', startTime: '09:00', endTime: '09:30' },
+  { id: 2, column: 'wed-c', name: '1:1',     startTime: '16:00', endTime: '16:30' },
+]
+```
+
+```tsx
+<ShadulerColumnsHeader
+  gridTemplateColumns={calc.gridTemplateColumns}
+  style={{ gridTemplateRows: 'auto auto' }}
+>
+  {/* Corner spans both rows so it stays aligned with the time column body. */}
+  <ShadulerCorner style={{ gridRow: '1 / 3' }} />
+
+  {/* Row 1 — one cell per group, spanning all its leaf columns. */}
+  {dayGroups.map((day, i) => (
+    <div
+      key={day.id}
+      className="flex items-center justify-center border-b border-r px-4 py-2 text-sm font-semibold"
+      style={{
+        gridColumn: `${i * resourcesPerDay.length + 2} / span ${resourcesPerDay.length}`,
+        gridRow: 1,
+      }}
+    >
+      {day.label}
+    </div>
+  ))}
+
+  {/* Row 2 — individual leaf columns. */}
+  {columns.map((column, index) => (
+    <ShadulerColumnHeader
+      key={column.id}
+      column={column}
+      columnIndex={index}
+      style={{ gridRow: 2 }}
+    />
+  ))}
+</ShadulerColumnsHeader>
+```
+
+The key bit is `gridColumn: "<start> / span <size>"` — the start position is `groupIndex × groupSize + 2` (skip the time column), and `span <size>` covers all leaf columns inside that group.
+
+For three days × three resources the math is `i × 3 + 2`. If group sizes vary, compute a running offset instead.

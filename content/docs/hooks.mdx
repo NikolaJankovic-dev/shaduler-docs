@@ -1,0 +1,18 @@
+---
+title: Hooks
+description: Three opt-in headless hooks for drag, resize, and range-select.
+---
+
+> Placeholder — full hook reference coming next iteration.
+
+## Available hooks
+
+- `useShadulerTaskResize` — drag bottom edge of a task to change `endTime`
+- `useShadulerTaskDrag` — drag a task between columns/times (with click-vs-drag threshold so `onClick` still works)
+- `useShadulerRangeSelect` — drag across cells to define a new time range (drag-to-create)
+
+Plus a tiny merger:
+
+- `composeShadulerTaskProps(...sources)` — combines props from multiple hooks into one object you can spread on `<ShadulerTask>`
+
+Detailed examples coming next iteration.

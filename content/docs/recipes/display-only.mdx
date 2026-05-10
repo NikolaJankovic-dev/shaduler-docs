@@ -1,0 +1,97 @@
+---
+title: Display-only
+description: Pure read-only render — no hooks, no interaction, just composed primitives.
+---
+
+The simplest possible shaduler usage. No interaction hooks, no `onCellPointerDown`, no resize handles — just primitives that turn data into a calendar.
+
+<Preview>
+  <DemoDisplayOnly />
+</Preview>
+
+```tsx
+import { useMemo } from 'react'
+import {
+  ShadulerCell,
+  ShadulerColumnHeader,
+  ShadulerColumnsHeader,
+  ShadulerCorner,
+  ShadulerGrid,
+  ShadulerTasksOverlay,
+  ShadulerTimeColumn,
+  calculateShadulerData,
+} from '@/components/ui/shaduler'
+
+const START_HOUR = 8        // grid begins at 08:00
+const END_HOUR = 19         // grid ends at 19:00 (exclusive)
+const HOUR_HEIGHT_PX = 60   // pixel height per 60-min row
+
+const columns = [
+  { id: 'a', label: 'Resource A' },
+  { id: 'b', label: 'Resource B' },
+  { id: 'c', label: 'Resource C' },
+]
+
+const tasks = [
+  { id: 1, column: 'a', name: 'Morning sync', startTime: '09:00', endTime: '10:00' },
+  { id: 2, column: 'b', name: 'Design review', startTime: '10:00', endTime: '11:30' },
+  { id: 3, column: 'c', name: 'Deep work', startTime: '14:00', endTime: '17:00' },
+]
+
+export function DisplayOnly() {
+  const calc = useMemo(
+    () =>
+      calculateShadulerData(
+        columns,
+        tasks,
+        START_HOUR,
+        END_HOUR,
+        HOUR_HEIGHT_PX,
+      ),
+    [],
+  )
+  return (
+    <Shaduler>
+      <ShadulerContent>
+        <ShadulerColumnsHeader gridTemplateColumns={calc.gridTemplateColumns}>
+          <ShadulerCorner />
+          {columns.map((c, i) => (
+            <ShadulerColumnHeader key={c.id} column={c} columnIndex={i} />
+          ))}
+        </ShadulerColumnsHeader>
+        <ShadulerGrid
+          gridTemplateColumns={calc.gridTemplateColumns}
+          gridTemplateRows={calc.gridTemplateRows}
+        >
+          <ShadulerTimeColumn
+            startTime={START_HOUR}
+            endTime={END_HOUR}
+            timeFormat="24h"
+          />
+          {calc.hours.flatMap((hour, hourIndex) =>
+            columns.map((column, colIndex) => (
+              <ShadulerCell
+                key={`${column.id}-${hour}`}
+                hour={hour}
+                column={column}
+                columnIndex={colIndex}
+                hourIndex={hourIndex}
+                hourHeight={HOUR_HEIGHT_PX}
+              />
+            )),
+          )}
+          <ShadulerTasksOverlay
+            taskPositions={calc.taskPositions}
+            columns={columns}
+            startHour={START_HOUR}
+            endHour={END_HOUR}
+            hourHeight={HOUR_HEIGHT_PX}
+          />
+        </ShadulerGrid>
+      </ShadulerContent>
+    </Shaduler>
+  )
+}
+```
+
+Tasks render as default shadcn-styled pills. To replace them, pass children to `ShadulerTasksOverlay` (see [Custom render](/docs/recipes/custom-render)).

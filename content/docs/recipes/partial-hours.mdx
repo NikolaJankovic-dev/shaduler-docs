@@ -1,0 +1,60 @@
+---
+title: Partial-hour range
+description: Salon hours 08:30 → 18:30 via startMinute / endMinute. Drag, resize, drag-to-create all keep working.
+---
+
+When the schedule starts or ends mid-hour (salon, clinic, restaurant booking), pass `startMinute` and `endMinute` to `calculateShadulerData`. The grid renders shorter rows at the top and bottom; everything else (overlay positioning, drag, resize) stays mathematically correct.
+
+<Preview>
+  <DemoPartialHours />
+</Preview>
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 18
+const START_MINUTE = 30   // grid starts at 08:30
+const END_MINUTE = 30     // grid ends at 18:30
+const HOUR_HEIGHT_PX = 60
+const TIME_INTERVAL_MIN = 15
+
+const calc = calculateShadulerData(
+  columns,
+  tasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+  { startMinute: START_MINUTE, endMinute: END_MINUTE },
+)
+```
+
+Pass the same `startMinute` / `endMinute` to every primitive that needs to know the range:
+
+```tsx
+<ShadulerTimeColumn
+  startTime={START_HOUR} endTime={END_HOUR}
+  startMinute={START_MINUTE} endMinute={END_MINUTE}
+  rows={calc.rows}
+/>
+<ShadulerCells rows={calc.rows} columns={columns} ... />
+<ShadulerTasksOverlay
+  startHour={START_HOUR} endHour={END_HOUR}
+  startMinute={START_MINUTE} endMinute={END_MINUTE}
+  ...
+/>
+```
+
+The interaction hooks accept the same options:
+
+```tsx
+useShadulerTaskResize({
+  startHour: START_HOUR, endHour: END_HOUR,
+  startMinute: START_MINUTE, endMinute: END_MINUTE,
+  hourHeight: HOUR_HEIGHT_PX,
+  timeInterval: TIME_INTERVAL_MIN,
+  ...
+})
+useShadulerTaskDrag({ /* same range options */ ... })
+useShadulerRangeSelect({ /* same range options */ ... })
+```
+
+Snapping (`timeInterval`) still works — a 15-min interval will land on `:00`, `:15`, `:30`, `:45` regardless of where the range starts.

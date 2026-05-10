@@ -1,0 +1,66 @@
+---
+title: Custom task rendering
+description: Extend the task type, render status icons, and apply dynamic Tailwind classes.
+---
+
+`ShadulerTaskData` is an interface, not a concrete shape — extend it with whatever fields your app needs. `calculateShadulerData<T>` is generic, so the extended fields survive all the way to the render-prop closure (no casts).
+
+<Preview>
+  <DemoCustomRender />
+</Preview>
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 19
+const HOUR_HEIGHT_PX = 60
+
+type StatusTask = ShadulerTaskData & {
+  status: 'approved' | 'pending' | 'rejected'
+}
+
+const statusStyles: Record<StatusTask['status'], { wrapper: string; icon: ... }> = {
+  approved: { wrapper: 'bg-emerald-500/10 ...', icon: CheckCircle2 },
+  pending:  { wrapper: 'bg-amber-500/10 ...',   icon: Clock3 },
+  rejected: { wrapper: 'bg-rose-500/10 ...',    icon: XCircle },
+}
+
+const calc = calculateShadulerData<StatusTask>(
+  columns,
+  statusTasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+)
+```
+
+Pass children to `ShadulerTasksOverlay` to take over rendering. The default pill is replaced — wrap your own JSX inside `<ShadulerTask>` (so positioning still happens automatically).
+
+```tsx
+<ShadulerTasksOverlay taskPositions={calc.taskPositions} columns={columns} ...>
+  {(positions, cols) =>
+    (cols ?? []).map((column, colIndex) =>
+      (positions[column.id] ?? []).map((pos) => {
+        const task = pos.task // typed as StatusTask
+        const style = statusStyles[task.status]
+        const Icon = style.icon
+        return (
+          <ShadulerTask
+            key={task.id}
+            task={task}
+            position={pos}
+            columnIndex={colIndex}
+            totalColumns={(cols ?? []).length}
+          >
+            <div className={cn('rounded-md border px-2 py-1.5', style.wrapper)}>
+              <Icon className="size-3" />
+              <span>{task.name}</span>
+            </div>
+          </ShadulerTask>
+        )
+      }),
+    )
+  }
+</ShadulerTasksOverlay>
+```
+
+`pos.task` keeps its `StatusTask` typing thanks to the generic on `calculateShadulerData<StatusTask>`.

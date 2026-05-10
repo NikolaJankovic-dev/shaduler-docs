@@ -1,0 +1,47 @@
+---
+title: Week view
+description: Same component, columns are days of the week instead of resources.
+---
+
+Nothing about shaduler is "resource-flavored" — columns are just labeled lanes. Use day names for a personal/team weekly schedule.
+
+<Preview>
+  <DemoWeekView />
+</Preview>
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 19
+const HOUR_HEIGHT_PX = 60
+const TIME_COLUMN_WIDTH_PX = 64  // narrower left gutter when columns are tight
+
+const weekColumns = [
+  { id: 'mon', label: 'Mon' },
+  { id: 'tue', label: 'Tue' },
+  { id: 'wed', label: 'Wed' },
+  { id: 'thu', label: 'Thu' },
+  { id: 'fri', label: 'Fri' },
+  { id: 'sat', label: 'Sat' },
+  { id: 'sun', label: 'Sun' },
+]
+
+const weekTasks = [
+  { id: 'w1', column: 'mon', name: 'Standup', startTime: '09:00', endTime: '09:30' },
+  { id: 'w2', column: 'mon', name: 'Sprint planning', startTime: '10:00', endTime: '12:00' },
+  { id: 'w3', column: 'tue', name: 'Customer call', startTime: '11:00', endTime: '12:00' },
+  // …
+]
+
+const calc = calculateShadulerData(
+  weekColumns,
+  weekTasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+  { timeColumnWidth: TIME_COLUMN_WIDTH_PX },
+)
+```
+
+Pass the same `timeColumnWidth` both to `calculateShadulerData` and to `ShadulerTasksOverlay` so they stay aligned.
+
+For multi-day events that span several columns at once, layer `ShadulerAllDayStrip` on top — see [All-day events](/docs/recipes/all-day).

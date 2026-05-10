@@ -1,0 +1,92 @@
+---
+title: Full interactivity
+description: Drag, resize, and drag-to-create combined via composeShadulerTaskProps.
+---
+
+The three opt-in hooks — `useShadulerTaskResize`, `useShadulerTaskDrag`, `useShadulerRangeSelect` — combined. Toggle each one off independently to see what it contributes.
+
+<Preview>
+  <DemoFullInteractivity />
+</Preview>
+
+## How the three hooks compose
+
+Everything ships from the same `@/components/ui/shaduler` file:
+
+```tsx
+import {
+  ShadulerCells,
+  ShadulerColumnHeader,
+  ShadulerColumnsHeader,
+  ShadulerCorner,
+  ShadulerGrid,
+  ShadulerTask,
+  ShadulerTasksOverlay,
+  ShadulerTimeColumn,
+  calculateShadulerData,
+  composeShadulerTaskProps,
+  minutesToTime,
+  useShadulerRangeSelect,
+  useShadulerTaskDrag,
+  useShadulerTaskResize,
+} from '@/components/ui/shaduler'
+```
+
+Each hook returns a `getXxxProps(task)` function. `composeShadulerTaskProps(...)` merges their outputs — calling each handler in turn while keeping `isDragging` flags consistent.
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 19
+const HOUR_HEIGHT_PX = 60
+const TIME_INTERVAL_MIN = 15  // snap drag/resize to 15-min grid
+
+const { getResizeProps } = useShadulerTaskResize({
+  hourHeight: HOUR_HEIGHT_PX,
+  timeInterval: TIME_INTERVAL_MIN,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onResize: updateTask,
+  onResizeEnd: updateTask,
+})
+
+const { getTaskDragProps } = useShadulerTaskDrag({
+  gridRef,
+  columns,
+  hourHeight: HOUR_HEIGHT_PX,
+  timeInterval: TIME_INTERVAL_MIN,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onDrag: updateTask,
+  onDragEnd: updateTask,
+})
+
+const { activeRange, isSelecting, getCellProps } = useShadulerRangeSelect({
+  gridRef,
+  hourHeight: HOUR_HEIGHT_PX,
+  timeInterval: TIME_INTERVAL_MIN,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onSelect: (range) => { /* create task */ },
+})
+
+// inside the overlay's render-prop:
+const props = composeShadulerTaskProps(
+  resizeOn && getResizeProps(pos.task),
+  dragOn  && getTaskDragProps(pos.task),
+  { isSelecting },
+)
+return <ShadulerTask {...props} task={pos.task} position={pos} ... />
+```
+
+`getCellProps()` is spread onto every cell so the underlying drag-to-create works:
+
+```tsx
+<ShadulerCells
+  hours={calc.hours}
+  columns={columns}
+  hourHeight={HOUR_HEIGHT_PX}
+  cellProps={{ timeInterval: TIME_INTERVAL_MIN, ...getCellProps() }}
+/>
+```
+
+The hooks ignore each other's pointer interactions — when a resize handle is dragged, drag-to-move and range-select stay quiet.

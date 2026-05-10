@@ -1,0 +1,19 @@
+{
+  "title": "Recipes",
+  "pages": [
+    "index",
+    "display-only",
+    "click-to-create",
+    "full-interactivity",
+    "week-view",
+    "grouped-columns",
+    "many-resources",
+    "custom-render",
+    "locales",
+    "partial-hours",
+    "custom-labels",
+    "all-day",
+    "cross-midnight",
+    "full-customization"
+  ]
+}

@@ -1,0 +1,45 @@
+---
+title: Anatomy
+description: All shaduler primitives and how they fit together.
+---
+
+> Placeholder — full anatomy content will land soon.
+
+The component file exposes 15 primitives that compose into your scheduler. The expected nesting is:
+
+```tsx
+<Shaduler>
+  <ShadulerHeader>...optional toolbar...</ShadulerHeader>
+  <ShadulerContent>
+    <ShadulerColumnsHeader gridTemplateColumns={calc.gridTemplateColumns}>
+      <ShadulerCorner />
+      {columns.map((c, i) => (
+        <ShadulerColumnHeader key={c.id} column={c} columnIndex={i} />
+      ))}
+    </ShadulerColumnsHeader>
+
+    {/* Optional: multi-day all-day events */}
+    <ShadulerAllDayStrip
+      columns={columns}
+      tasks={allDayEvents}
+      gridTemplateColumns={calc.gridTemplateColumns}
+    />
+
+    <ShadulerGrid
+      gridTemplateColumns={calc.gridTemplateColumns}
+      gridTemplateRows={calc.gridTemplateRows}
+    >
+      <ShadulerTimeColumn rows={calc.rows} startTime={8} endTime={19} />
+      <ShadulerCells rows={calc.rows} columns={columns} hourHeight={60} />
+      <ShadulerTasksOverlay
+        taskPositions={calc.taskPositions}
+        columns={columns}
+        startHour={8}
+        endHour={19}
+      />
+    </ShadulerGrid>
+  </ShadulerContent>
+</Shaduler>
+```
+
+Detailed per-primitive docs coming next iteration.

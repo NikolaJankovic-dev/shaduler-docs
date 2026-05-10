@@ -1,0 +1,24 @@
+---
+title: Recipes
+description: Common patterns — display-only, click-to-create, drag, resize, week view, all-day, and more.
+---
+
+Each recipe is a self-contained example showing one capability of the component. They all share the same primitives — only the data, hooks, and rendering vary.
+
+## Patterns
+
+- **[Display-only](/docs/recipes/display-only)** — pure read-only render, no hooks
+- **[Click-to-create](/docs/recipes/click-to-create)** — single-click creates a 1-hour task at the clicked minute
+- **[Full interactivity](/docs/recipes/full-interactivity)** — drag + resize + drag-to-create combined via composeShadulerTaskProps
+- **[Week view](/docs/recipes/week-view)** — columns are days of the week instead of resources
+- **[Grouped columns](/docs/recipes/grouped-columns)** — two-row header where outer cells span groups (days × resources)
+- **[Many resources](/docs/recipes/many-resources)** — 100 columns with horizontal scroll and `minColumnWidth`
+- **[Custom render](/docs/recipes/custom-render)** — extend ShadulerTaskData and render task children with status icons
+- **[Locales](/docs/recipes/locales)** — `formatTime` with BCP 47 locale via Intl.DateTimeFormat
+- **[Partial hours](/docs/recipes/partial-hours)** — salon range 08:30 → 18:30 via `startMinute`/`endMinute`
+- **[Custom row labels](/docs/recipes/custom-labels)** — render shift names instead of clock times
+- **[All-day events](/docs/recipes/all-day)** — multi-day strip above the hourly grid
+- **[Cross-midnight events](/docs/recipes/cross-midnight)** — split helper that turns a single event into two visual rows
+- **[Full customization](/docs/recipes/full-customization)** — kitchen-sink demo combining view modes, date navigation, add/edit dialogs, overlap detection, and all three interaction hooks
+
+Click any recipe for a live preview and the source.

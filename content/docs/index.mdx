@@ -1,0 +1,105 @@
+---
+title: Introduction
+description: A composable scheduler grid for shadcn/ui — primitives plus opt-in headless hooks.
+---
+
+shaduler is a **time-grid primitive** for shadcn/ui — like TanStack Table for time-based data. It hands you composable primitives that already inherit your shadcn theme and leaves drag, resize, and range-select as opt-in hooks you wire up only when you need them.
+
+## When to use shaduler
+
+- Resource-allocation views (technicians × hours, rooms × hours, machines × hours)
+- Daily / weekly schedule UIs (booking, salons, clinics, classrooms)
+- Internal admin dashboards where you need full control over rendering
+- Apps already on shadcn/ui where importing a heavy calendar library feels wrong
+
+## Design philosophy
+
+1. **Primitives first.** Twelve sub-components (`Shaduler`, `ShadulerHeader`, `ShadulerGrid`, …) compose into the layout you want. No black-box monolith.
+2. **Headless interactions.** Drag, resize, and range-select live in three opt-in hooks (`useShadulerTaskResize`, `useShadulerTaskDrag`, `useShadulerRangeSelect`). Display-only mode is one render away.
+3. **shadcn theme native.** Every color is a CSS variable. Every primitive carries a `data-slot` for theming hooks. Tasks render as standard shadcn variants (`default`, `secondary`, `outline`, `destructive`, …).
+4. **Time-of-day grid.** Y axis is always time. Multi-day events live in the separate `ShadulerAllDayStrip`. Cross-midnight events split at the data layer.
+
+## Quick taste
+
+<Preview>
+  <QuickTastePreview />
+</Preview>
+
+Everything in one file — primitives, the calculator helper, the data types:
+
+```tsx
+import {
+  Shaduler,
+  ShadulerContent,
+  ShadulerColumnsHeader,
+  ShadulerColumnHeader,
+  ShadulerCorner,
+  ShadulerGrid,
+  ShadulerTimeColumn,
+  ShadulerCells,
+  ShadulerTasksOverlay,
+  calculateShadulerData,
+} from '@/components/ui/shaduler'
+```
+
+Define the visible range and row height once — every primitive that needs them
+reads from the same constants:
+
+```tsx
+const START_HOUR = 8       // grid begins at 08:00
+const END_HOUR = 19        // grid ends at 19:00 (exclusive)
+const HOUR_HEIGHT_PX = 60  // pixel height per 60-min row
+
+const columns = [
+  { id: 'a', label: 'Resource A' },
+  { id: 'b', label: 'Resource B' },
+]
+
+const tasks = [
+  { id: 1, column: 'a', name: 'Morning sync', startTime: '09:00', endTime: '10:00' },
+  { id: 2, column: 'b', name: 'Lunch',        startTime: '12:00', endTime: '13:00' },
+]
+
+const calc = calculateShadulerData(
+  columns,
+  tasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+)
+```
+
+Compose the layout — primitives wrap each other; nothing magical:
+
+```tsx
+<Shaduler>
+  <ShadulerContent>
+    <ShadulerColumnsHeader gridTemplateColumns={calc.gridTemplateColumns}>
+      <ShadulerCorner />
+      {columns.map((c, i) => (
+        <ShadulerColumnHeader key={c.id} column={c} columnIndex={i} />
+      ))}
+    </ShadulerColumnsHeader>
+
+    <ShadulerGrid
+      gridTemplateColumns={calc.gridTemplateColumns}
+      gridTemplateRows={calc.gridTemplateRows}
+    >
+      <ShadulerTimeColumn startTime={START_HOUR} endTime={END_HOUR} />
+      <ShadulerCells
+        rows={calc.rows}
+        columns={columns}
+        hourHeight={HOUR_HEIGHT_PX}
+      />
+      <ShadulerTasksOverlay
+        taskPositions={calc.taskPositions}
+        columns={columns}
+        startHour={START_HOUR}
+        endHour={END_HOUR}
+      />
+    </ShadulerGrid>
+  </ShadulerContent>
+</Shaduler>
+```
+
+Continue with [Installation](/docs/installation) →

@@ -1,0 +1,70 @@
+---
+title: Installation
+description: Add shaduler to a shadcn/ui project in one command.
+---
+
+## Prerequisites
+
+- A shadcn/ui project (Tailwind CSS, `cn` util at `@/lib/utils`).
+- React 19 (shaduler uses the modern function-component + ref-as-prop pattern).
+- Tailwind CSS v4 (uses `@theme inline` and CSS variables — `--primary`, `--ring`, `--radius`, etc.).
+
+If you've already initialised shadcn (`shadcn@latest init`), you're set.
+
+## Add the component
+
+Pick your package manager:
+
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
+  <Tab value="pnpm">
+    ```bash
+    pnpm dlx shadcn@latest add https://shaduler.dev/r/shaduler.json
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    npx shadcn@latest add https://shaduler.dev/r/shaduler.json
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn dlx shadcn@latest add https://shaduler.dev/r/shaduler.json
+    ```
+  </Tab>
+  <Tab value="bun">
+    ```bash
+    bunx --bun shadcn@latest add https://shaduler.dev/r/shaduler.json
+    ```
+  </Tab>
+</Tabs>
+
+This drops a single file at `components/ui/shaduler.tsx` and installs `class-variance-authority` if it isn't already present.
+
+## Verify
+
+Render a tiny example to confirm it works:
+
+```tsx
+import { Shaduler } from '@/components/ui/shaduler'
+
+export default function Test() {
+  return (
+    <div className="h-[400px]">
+      <Shaduler>{/* ... */}</Shaduler>
+    </div>
+  )
+}
+```
+
+If your shadcn theme is set up, the border, background, and rounding should already match.
+
+## What you get
+
+One file, ~1700 LOC, exporting:
+
+- **Primitives** (15): `Shaduler`, `ShadulerHeader`, `ShadulerContent`, `ShadulerGrid`, `ShadulerColumnsHeader`, `ShadulerColumnHeader`, `ShadulerCorner`, `ShadulerTimeColumn`, `ShadulerTimeSlot`, `ShadulerCell`, `ShadulerCells`, `ShadulerTask`, `ShadulerTasksOverlay`, `ShadulerAllDayStrip`, `ShadulerAllDayTask`
+- **Pure helpers** (6): `calculateShadulerData`, `calculateAllDayPositions`, `generateRows`, `generateHours`, `groupTasksByColumn`, `formatTime`, `timeToMinutes`, `minutesToTime`
+- **Hooks** (3): `useShadulerTaskResize`, `useShadulerTaskDrag`, `useShadulerRangeSelect`
+- **Variants + helpers**: `shadulerTaskVariants`, `composeShadulerTaskProps`
+
+Continue with [Anatomy](/docs/anatomy) →

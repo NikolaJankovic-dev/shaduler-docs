@@ -1,0 +1,277 @@
+---
+title: Full customization
+description: Real-world recipe combining view modes, date navigation, working-hour shading, typed tasks with icons, resource and type filters, drag/resize, range-select with dialog, fullscreen, and overlap + non-working-hours warnings.
+---
+
+This is the kitchen-sink demo — every shaduler feature wired up the way you'd ship it in a real app:
+
+- **24-hour grid with working-hour shading** — `START_HOUR=0`, `END_HOUR=24`, but cells outside `workStart`/`workEnd` get a striped pattern. The working window itself is editable from the toolbar.
+- **View toggle** — 1 / 3 / 7 days, all running through one shaduler instance with compound column ids (`<date>::<resource>`).
+- **Date navigation** — prev / next arrows step by the active view's day count, a calendar Popover opens for picking a specific day, and a Today button snaps back.
+- **Stacked headers** — switch between a single-row layout (day + name) and a two-row layout (day above, resource below) using `gridTemplateRows: 'auto auto'` on `ShadulerColumnsHeader`.
+- **Typed tasks with icons** — each task carries a `type` (`meeting` / `call` / `focus` / `lunch` / `break`). The task body is replaced with a colored card showing the type icon, name, and time range.
+- **Resource + type filters** — Popover checklists in the toolbar with a live count badge (`2/3`); the grid re-derives columns and visible tasks.
+- **Editable working hours** — a Popover with two `Select` dropdowns updates `workStart`/`workEnd`; the striped cells and the warning predicate follow.
+- **Custom corner** — `ShadulerCorner` holds an Add button that opens the same dialog the form-based recipes use.
+- **Drag / resize / drag-to-create** — the three hooks composed via `composeShadulerTaskProps`. Drag-to-create opens the dialog with the range pre-filled instead of inserting straight away.
+- **Overlap + non-working warnings** — on save we collect all issues (overlap, out-of-hours) and surface an `AlertDialog` with the list before committing.
+- **Click to edit** — clicking a task opens the dialog populated with its current values, with a Delete button.
+- **Fullscreen toggle** — top-right button (or `Esc` to exit). Positions the whole demo fixed over the viewport at `z-60`.
+
+<Preview>
+  <DemoFullCustomization />
+</Preview>
+
+## Compound column ids
+
+Each column id encodes the date **and** the resource (`2026-05-10::anna`). Shaduler still sees a flat list — the grouping is purely how we render headers and partition tasks.
+
+```tsx
+function buildColumnId(dateKey: string, resourceId: string): string {
+  return `${dateKey}::${resourceId}`
+}
+function parseColumnId(id: string | number) {
+  const [dateKey, resourceId] = String(id).split('::')
+  return { dateKey, resourceId }
+}
+
+const columns = dates.flatMap((d) =>
+  RESOURCES.map((r) => ({
+    id: buildColumnId(toKey(d), r.id),
+    label: r.name,
+  })),
+)
+```
+
+## Add button inside `ShadulerCorner`
+
+The corner is just a slot — drop whatever React you want inside.
+
+```tsx
+<ShadulerCorner
+  style={stackedHeaders ? { gridRow: `1 / ${headerRows + 1}` } : undefined}
+>
+  <Button size="sm" onClick={() => setNewTaskDraft(defaultDraft())}>
+    <Plus className="size-3.5" /> Add
+  </Button>
+</ShadulerCorner>
+```
+
+When the headers are two rows tall, the corner spans both rows via `gridRow`.
+
+## Drag-to-create opens the dialog instead of inserting
+
+By default `useShadulerRangeSelect.onSelect` is where you would push a new task. Push to a `draft` state instead and the dialog handles the rest.
+
+```tsx
+const { activeRange, isSelecting, getCellProps } = useShadulerRangeSelect({
+  gridRef,
+  hourHeight: HOUR_HEIGHT_PX,
+  timeInterval: TIME_INTERVAL_MIN,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onSelect: (range) => {
+    const { dateKey, resourceId } = parseColumnId(range.columnId)
+    setNewTaskDraft({
+      name: '',
+      dateKey,
+      resourceId,
+      startTime: minutesToTime(range.startMinutes),
+      endTime: minutesToTime(range.endMinutes),
+    })
+  },
+})
+```
+
+The user can edit the name / resource / time before pressing Save, or cancel the whole thing without polluting state.
+
+## Combined warnings (overlap + non-working hours)
+
+The commit path collects all issues into a single list and surfaces them in one AlertDialog — "Save anyway" runs the original commit, Cancel drops it.
+
+```tsx
+function isOutsideWorkingHours(c, workStart, workEnd) {
+  const s = timeToMinutes(c.startTime)
+  const e = timeToMinutes(c.endTime)
+  return s < workStart * 60 || e > workEnd * 60
+}
+
+const collectWarnings = (candidate) => {
+  const out = []
+  const conflict = detectOverlap(tasks, candidate)
+  if (conflict) {
+    out.push(`Conflicts with "${conflict.name}" (${conflict.startTime} – ${conflict.endTime}).`)
+  }
+  if (isOutsideWorkingHours(candidate, workStart, workEnd)) {
+    out.push(`Time falls outside working hours (${pad(workStart)}:00 – ${pad(workEnd)}:00).`)
+  }
+  return out
+}
+
+const commitNewTask = (draft) => {
+  const task = buildTask(draft)
+  const insert = () => {
+    setTasks((prev) => [...prev, task])
+    setNewTaskDraft(null)
+    setWarningPrompt(null)
+  }
+  const warnings = collectWarnings(task)
+  if (warnings.length > 0) {
+    setWarningPrompt({ warnings, onConfirm: insert })
+    return
+  }
+  insert()
+}
+```
+
+Drag and resize **don't** trigger the prompt — they fire dozens of events per second and a confirm dialog mid-drag would be unusable. If you want strict conflict prevention there, gate the final `onResizeEnd` / `onDragEnd` instead of every intermediate tick.
+
+## Working-hour shading
+
+The grid spans the full 24 hours, but cells outside `workStart`–`workEnd` get a diagonal-stripe background so they read as "outside hours" without being hidden. Use a manual cell loop instead of `ShadulerCells` so you can branch per cell:
+
+```tsx
+{calc.hours.flatMap((hour, hourIndex) =>
+  columns.map((column, colIndex) => {
+    const isNonWorking = hour < workStart || hour >= workEnd
+    return (
+      <ShadulerCell
+        key={`${column.id}-${hour}`}
+        hour={hour}
+        column={column}
+        columnIndex={colIndex}
+        hourIndex={hourIndex}
+        hourHeight={HOUR_HEIGHT_PX}
+        timeInterval={TIME_INTERVAL_MIN}
+        className={cn(
+          isNonWorking &&
+            'bg-[repeating-linear-gradient(135deg,var(--color-muted)_0_6px,transparent_6px_12px)] opacity-70',
+        )}
+        {...getCellProps()}
+      />
+    )
+  }),
+)}
+```
+
+## Typed tasks (icon + colored card)
+
+`ShadulerTask` accepts children — the default pill is replaced with your own card. Keep one `Record<Type, { icon, className }>` map and render per-type:
+
+```tsx
+const TASK_TYPES = [
+  { id: 'meeting', label: 'Meeting', icon: Users,    className: 'bg-blue-500/15 text-blue-700 …' },
+  { id: 'call',    label: 'Call',    icon: Phone,    className: 'bg-emerald-500/15 …' },
+  { id: 'focus',   label: 'Focus',   icon: Target,   className: 'bg-violet-500/15 …' },
+  { id: 'lunch',   label: 'Lunch',   icon: Utensils, className: 'bg-amber-500/15 …' },
+  { id: 'break',   label: 'Break',   icon: Coffee,   className: 'bg-stone-500/15 …' },
+]
+
+<ShadulerTask {...props} className="bg-transparent p-0">
+  <div className={cn('flex h-full flex-col gap-0.5 rounded-md border px-2 py-1', cfg.className)}>
+    <div className="flex items-center gap-1.5">
+      <Icon className="size-3 shrink-0" />
+      <span className="truncate text-xs font-semibold">{task.name}</span>
+    </div>
+    <span className="text-[10px] opacity-80">
+      {task.startTime} – {task.endTime}
+    </span>
+  </div>
+</ShadulerTask>
+```
+
+`bg-transparent p-0` on `ShadulerTask` itself removes the default padding/background so the card fills the slot.
+
+## Resource + type filters
+
+Each filter is a Popover with a checklist. State is a `Set<string>`; toggling adds / removes ids. Both Sets feed into the column derivation and task filter:
+
+```tsx
+const [visibleResources, setVisibleResources] = useState<Set<string>>(
+  () => new Set(RESOURCES.map((r) => r.id)),
+)
+const [visibleTypes, setVisibleTypes] = useState<Set<TaskType>>(
+  () => new Set(TASK_TYPES.map((t) => t.id)),
+)
+
+const columns = dates.flatMap((d) =>
+  RESOURCES
+    .filter((r) => visibleResources.has(r.id))
+    .map((r) => ({ id: buildColumnId(toKey(d), r.id), label: r.name })),
+)
+
+const visibleTasks = tasks.filter((t) =>
+  keys.has(t.dateKey) &&
+  visibleResources.has(t.resourceId) &&
+  visibleTypes.has(t.type),
+)
+```
+
+Filtering resources changes the grid template; filtering types just hides tasks. Both are computed memos — no extra data plumbing.
+
+## Editable working hours
+
+Two `Select` dropdowns (0–23 for start, 1–24 for end) inside a Popover. An Apply button commits both at once so the grid doesn't re-shade mid-drag of the dropdown:
+
+```tsx
+function HoursPopover({ workStart, workEnd, onChange }) {
+  const [s, setS] = useState(workStart)
+  const [e, setE] = useState(workEnd)
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+          <Clock className="size-3.5" />
+          {pad(workStart)}:00 – {pad(workEnd)}:00
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent>
+        {/* two Selects for s / e */}
+        <Button onClick={() => onChange(s, e)} disabled={e <= s}>Apply</Button>
+      </PopoverContent>
+    </Popover>
+  )
+}
+```
+
+## Filtering visible tasks per view
+
+The component stores **all** tasks across all dates. We slice down to only the dates visible right now before calling `calculateShadulerData`:
+
+```tsx
+const visibleTasks = useMemo(() => {
+  const keys = new Set(dates.map(toKey))
+  return tasks.filter((t) => keys.has(t.dateKey))
+}, [tasks, dates])
+```
+
+Switching from 1-day to 7-day view just re-runs the memo with more keys — no data layer changes.
+
+## Fullscreen toggle
+
+State + conditional positioning is enough — no portal needed. `position: fixed; inset: 0; z-index: 60` takes the whole demo over the viewport. Escape returns to normal.
+
+```tsx
+const [fullscreen, setFullscreen] = useState(false)
+
+useEffect(() => {
+  if (!fullscreen) return
+  const onKey = (e: KeyboardEvent) =>
+    e.key === 'Escape' && setFullscreen(false)
+  window.addEventListener('keydown', onKey)
+  return () => window.removeEventListener('keydown', onKey)
+}, [fullscreen])
+
+<div
+  className={cn(
+    fullscreen && 'fixed inset-0 z-[60] flex flex-col bg-background p-4',
+  )}
+>
+  {/* toolbar */}
+  <div className={cn(fullscreen ? 'min-h-0 flex-1' : 'h-[520px]')}>
+    <Shaduler>…</Shaduler>
+  </div>
+</div>
+```
+
+Dialogs (TaskDialog, AlertDialog) already render in a Radix Portal, so they appear above the fullscreen layer without extra plumbing.

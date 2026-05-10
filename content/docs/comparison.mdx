@@ -1,0 +1,26 @@
+---
+title: Comparison
+description: When to pick shaduler vs React Big Calendar vs FullCalendar.
+---
+
+> Placeholder — fuller comparison coming next iteration.
+
+## TL;DR
+
+- **You're already on shadcn/ui and need a resource × time view** → shaduler.
+- **You need month / agenda / year views, recurring events, timezone-aware data** → React Big Calendar or FullCalendar. Don't try to bend shaduler to do those — they're different problems.
+
+## Where shaduler wins
+
+- Single file copy-paste, no NPM package to fight (uses `pnpm dlx shadcn add ...`).
+- Inherits your shadcn theme automatically — no CSS overrides.
+- Generic types preserve user-extended task data through render-prop closures.
+- Headless interaction hooks are opt-in — display-only is the default.
+- Built for React 19 + TS 5; modern function-component pattern.
+
+## Where shaduler loses (today)
+
+- No month / agenda / year views.
+- No recurring-event parsing (use `rrule` or similar at the data layer, then pass expanded instances).
+- No native timezone / DST handling — keep that at the data layer.
+- No keyboard arrow navigation between cells (Tab through tasks works).

@@ -1,0 +1,70 @@
+---
+title: All-day events
+description: Multi-day strip above the hourly grid. Overlapping events stack into lanes.
+---
+
+Vacations, multi-day workshops, holidays — events that span entire days. They live in their own strip above the hourly grid (Google Calendar / Outlook style), keeping the hourly grid clean for time-of-day events.
+
+<Preview>
+  <DemoAllDay />
+</Preview>
+
+The all-day strip is a separate primitive (`ShadulerAllDayStrip`) that you opt into when your data has multi-day events. Render it between the columns header and the hourly grid.
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 18
+const HOUR_HEIGHT_PX = 60
+const TIME_COLUMN_WIDTH_PX = 72
+
+type VacationTask = ShadulerAllDayTaskData & {
+  category: 'vacation' | 'workshop' | 'holiday'
+}
+
+const allDayEvents: VacationTask[] = [
+  { id: 'pto-ana', name: 'Ana — PTO', startColumn: 'mon', endColumn: 'wed', category: 'vacation' },
+  { id: 'workshop', name: 'React workshop', startColumn: 'tue', endColumn: 'thu', category: 'workshop' },
+]
+
+const calc = calculateShadulerData(
+  columns,
+  hourlyTasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+  { timeColumnWidth: TIME_COLUMN_WIDTH_PX },
+)
+```
+
+```tsx
+<ShadulerColumnsHeader gridTemplateColumns={calc.gridTemplateColumns}>
+  <ShadulerCorner />
+  {columns.map(...)}
+</ShadulerColumnsHeader>
+
+<ShadulerAllDayStrip<VacationTask>
+  columns={columns}
+  tasks={allDayEvents}
+  gridTemplateColumns={calc.gridTemplateColumns}
+>
+  {(positions) =>
+    positions.map((pos) => (
+      <ShadulerAllDayTask
+        key={pos.task.id}
+        position={pos}
+        className={categoryClass[pos.task.category]}
+      >
+        <span className="truncate">{pos.task.name}</span>
+      </ShadulerAllDayTask>
+    ))
+  }
+</ShadulerAllDayStrip>
+
+<ShadulerGrid ...>
+  {/* hourly grid as usual */}
+</ShadulerGrid>
+```
+
+Overlapping events stack into lanes automatically — `calculateAllDayPositions` (called internally by the strip) does a greedy lane assignment per event in input order.
+
+Pass `gridTemplateColumns` from `calc` so the strip aligns perfectly with the columns header above and the hourly grid below.

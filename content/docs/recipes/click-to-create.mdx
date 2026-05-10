@@ -1,0 +1,40 @@
+---
+title: Click-to-create
+description: Single-click on a cell creates a 1-hour task at the clicked minute, snapped to a 15-min grid.
+---
+
+The smallest amount of interactivity: hand `ShadulerCell` an `onCellPointerDown` and create a task at the clicked minute. No hooks needed.
+
+<Preview>
+  <DemoClickToCreate />
+</Preview>
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 19
+const NEW_EVENT_DURATION_MIN = 60
+
+const handleCellDown = (
+  _e: React.PointerEvent<HTMLDivElement>,
+  info: { hour: number; minute: number; column?: ShadulerColumn },
+) => {
+  if (!info.column) return
+  const start = info.hour * 60 + info.minute
+  const end = Math.min(start + NEW_EVENT_DURATION_MIN, END_HOUR * 60)
+  setTasks((prev) => [
+    ...prev,
+    {
+      id: `created-${Date.now()}`,
+      column: info.column!.id,
+      name: 'New event',
+      startTime: minutesToTime(start),
+      endTime: minutesToTime(end),
+    },
+  ])
+}
+
+// pass it on the cell:
+<ShadulerCell ... onCellPointerDown={handleCellDown} />
+```
+
+`info.minute` is the snapped offset within the hour (15-min grid by default — control with `timeInterval` on the cell). For drag-to-create across multiple cells, switch to `useShadulerRangeSelect` ([Full interactivity](/docs/recipes/full-interactivity)).
