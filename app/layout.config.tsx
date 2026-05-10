@@ -36,9 +36,9 @@ export const baseOptions: BaseLayoutProps = {
     },
     {
       text: 'GitHub',
-      url: 'https://github.com/nikola-jankovic/shaduler',
+      url: 'https://github.com/NikolaJankovic-dev/shaduler-docs',
       external: true,
     },
   ],
-  githubUrl: 'https://github.com/nikola-jankovic/shaduler',
+  githubUrl: 'https://github.com/NikolaJankovic-dev/shaduler-docs',
 }

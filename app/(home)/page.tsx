@@ -45,7 +45,7 @@ export default function HomePage() {
           Install
         </Link>
         <a
-          href="https://github.com/nikola-jankovic/shaduler"
+          href="https://github.com/NikolaJankovic-dev/shaduler-docs"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex h-10 items-center justify-center rounded-md border bg-fd-background px-5 text-sm font-medium transition hover:bg-fd-muted"
