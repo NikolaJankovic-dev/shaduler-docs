@@ -52,7 +52,7 @@ Commit both files together. The `pnpm registry:build` step is what users
 install via:
 
 ```bash
-pnpm dlx shadcn@latest add https://shaduler.dev/r/shaduler.json
+pnpm dlx shadcn@latest add https://shaduler.vercel.app/r/shaduler.json
 ```
 
 ## Adding a new docs page
@@ -77,4 +77,4 @@ pnpm dlx shadcn@latest add https://shaduler.dev/r/shaduler.json
 
 Vercel — connect the repo, framework auto-detects as Next.js. The registry
 artifact at `public/r/shaduler.json` becomes the install URL once the domain
-is live (e.g. `https://shaduler.dev/r/shaduler.json`).
+is live (e.g. `https://shaduler.vercel.app/r/shaduler.json`).
