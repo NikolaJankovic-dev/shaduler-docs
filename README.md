@@ -78,4 +78,3 @@ pnpm dlx shadcn@latest add https://shaduler.dev/r/shaduler.json
 Vercel — connect the repo, framework auto-detects as Next.js. The registry
 artifact at `public/r/shaduler.json` becomes the install URL once the domain
 is live (e.g. `https://shaduler.dev/r/shaduler.json`).
-# shaduler-docs
