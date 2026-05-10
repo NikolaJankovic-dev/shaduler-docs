@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# shaduler
 
-## Getting Started
+A composable scheduler grid for shadcn/ui — primitives + opt-in headless
+hooks. This repo holds **everything**: the component source, its tests, the
+shadcn registry artifact, and the documentation site (Next.js 16 + Fumadocs).
+Users install the component via the published registry URL; nothing else needs
+to be hosted elsewhere.
 
-First, run the development server:
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev              # docs site at http://localhost:3000
+pnpm test             # vitest run (shaduler component tests)
+pnpm registry:build   # regenerate public/r/shaduler.json
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project layout
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+app/
+  (home)/             marketing landing
+  docs/               docs router (fumadocs DocsLayout)
+  preview/            interactive theme picker
+  layout.tsx          root <html>, RootProvider
+  layout.config.tsx   shared nav / links options
+content/docs/         MDX content (one file per page)
+components/
+  ui/
+    shaduler.tsx      ★ the component itself — source of truth
+    __tests__/        vitest specs (128 tests)
+    {button,popover,select,…}.tsx   shadcn pieces installed via CLI
+  demos/              live <Shaduler /> previews used inside MDX
+  preview-page/       /preview controls + canvas
+mdx-components.tsx    MDX component map
+registry.json         shadcn registry source (build → public/r/shaduler.json)
+public/r/shaduler.json  generated registry artifact (commit this)
+test-setup.ts         vitest setup (PointerEvent polyfill, RTL cleanup)
+vitest.config.ts      isolated test config (jsdom, no Next.js plugins)
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Editing the component
 
-## Learn More
+Edit `components/ui/shaduler.tsx` directly, then:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm test             # 128 tests should pass
+pnpm registry:build   # regenerates public/r/shaduler.json so installs pick up the new code
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Commit both files together. The `pnpm registry:build` step is what users
+install via:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm dlx shadcn@latest add https://shaduler.dev/r/shaduler.json
+```
 
-## Deploy on Vercel
+## Adding a new docs page
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Create `content/docs/my-page.mdx` with frontmatter:
+   ```mdx
+   ---
+   title: My Page
+   description: One-line description for SEO and search.
+   ---
+   ```
+2. (Optional) Update `content/docs/meta.json` to position it in the sidebar.
+3. Page is live at `/docs/my-page` immediately (no restart needed).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Adding a new live demo
+
+1. Create a `'use client'` component under `components/demos/<name>.tsx`.
+2. Register it in `mdx-components.tsx`.
+3. Reference it inside MDX: `<MyDemo />`.
+
+## Deploy
+
+Vercel — connect the repo, framework auto-detects as Next.js. The registry
+artifact at `public/r/shaduler.json` becomes the install URL once the domain
+is live (e.g. `https://shaduler.dev/r/shaduler.json`).
+# shaduler-docs
