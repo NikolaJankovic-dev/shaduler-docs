@@ -148,6 +148,15 @@ describe('calculateShadulerData', () => {
   it('produces expected gridTemplateColumns with default options', () => {
     const data = calculateShadulerData(cols, tasks, 8, 19, 60)
     expect(data.gridTemplateColumns).toBe(
+      '96px repeat(3, minmax(140px, 1fr))',
+    )
+  })
+
+  it('allows opting out of the minColumnWidth default for fluid columns', () => {
+    const data = calculateShadulerData(cols, tasks, 8, 19, 60, {
+      minColumnWidth: 0,
+    })
+    expect(data.gridTemplateColumns).toBe(
       '96px repeat(3, minmax(0px, 1fr))',
     )
   })
@@ -359,7 +368,7 @@ describe('calculateShadulerData', () => {
     const data = calculateShadulerData(cols, tasks, 8, 19, 60, 64)
     expect(data.timeColumnWidth).toBe(64)
     expect(data.gridTemplateColumns).toBe(
-      '64px repeat(3, minmax(0px, 1fr))',
+      '64px repeat(3, minmax(140px, 1fr))',
     )
   })
 })

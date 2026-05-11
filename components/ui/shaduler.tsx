@@ -290,7 +290,8 @@ export interface CalculateShadulerDataOptions {
   timeColumnWidth?: number
   /**
    * Minimum width per data column in pixels. When the container is narrower,
-   * horizontal scrolling kicks in instead of squishing columns. Default 0.
+   * horizontal scrolling kicks in instead of squishing columns. Default 140.
+   * Set to 0 if you want columns to shrink to fit narrow viewports.
    */
   minColumnWidth?: number
   /**
@@ -343,7 +344,7 @@ export const calculateShadulerData = <
       ? { timeColumnWidth: optsOrTimeColumnWidth }
       : optsOrTimeColumnWidth
   const timeColumnWidth = opts.timeColumnWidth ?? 96
-  const minColumnWidth = opts.minColumnWidth ?? 0
+  const minColumnWidth = opts.minColumnWidth ?? 140
   const startMinute = opts.startMinute ?? 0
   const endMinute = opts.endMinute ?? 0
 
