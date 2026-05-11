@@ -1,8 +1,9 @@
 import Link from 'next/link'
+import { LandingHeroDemo } from '@/components/demos/landing-hero'
 
 export default function HomePage() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-6 py-24 text-center">
+    <main className="flex flex-1 flex-col items-center px-6 py-16 text-center sm:py-20">
       <div className="mb-6 flex items-center gap-3 text-fd-foreground">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -52,6 +53,11 @@ export default function HomePage() {
         >
           GitHub
         </a>
+      </div>
+      <div className="mt-16 w-full max-w-4xl text-left">
+        <div className="overflow-hidden rounded-xl border bg-fd-card shadow-2xl shadow-slate-900/10 dark:shadow-black/40">
+          <LandingHeroDemo />
+        </div>
       </div>
     </main>
   )

@@ -47,11 +47,13 @@ when the separate `../shaduler` repo was folded in).
 - **GitHub README imagery** — `README.md` is text-only. Add screenshots / GIFs
   near the top (full-customization demo + a plain grid) so the GitHub landing
   has visual proof of what the thing looks like.
-- **"Where shaduler loses (today)" section** — honest-tradeoffs page/section
-  listing weaknesses vs. FullCalendar / Schedule-X / etc. Likely its own MDX
-  page in docs, possibly also surfaced on the landing. Needs user input on
-  which specific gaps to call out (month view, recurring events, …) — don't
-  draft it solo.
+- **Scope page** (`content/docs/comparison.mdx`, sidebar label "Scope") —
+  positions shaduler as a resource × time grid with a *bring-your-own*
+  philosophy. **Don't name or recommend competing libraries** (FullCalendar,
+  RBC, Schedule-X, etc.) anywhere in the copy — user explicitly cut that.
+  Out-of-scope items (month view, recurring, timezones) are reframed as
+  "you handle this upstream", not "use library X". Real gaps go under
+  "Still to come".
 
 ### `/preview` page (theme picker)
 

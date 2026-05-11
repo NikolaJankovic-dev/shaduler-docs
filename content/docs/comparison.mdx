@@ -1,26 +1,27 @@
 ---
-title: Comparison
-description: When to pick shaduler vs React Big Calendar vs FullCalendar.
+title: Scope
+description: shaduler is a resource × time grid with a bring-your-own philosophy.
 ---
 
-> Placeholder — fuller comparison coming next iteration.
+shaduler is a **resource × time grid** — columns are resources (people, rooms, machines), rows are hours of a day or week. That's the whole job.
 
-## TL;DR
+## What you get
 
-- **You're already on shadcn/ui and need a resource × time view** → shaduler.
-- **You need month / agenda / year views, recurring events, timezone-aware data** → React Big Calendar or FullCalendar. Don't try to bend shaduler to do those — they're different problems.
-
-## Where shaduler wins
-
-- Single file copy-paste, no NPM package to fight (uses `pnpm dlx shadcn add ...`).
+- Single file copy-paste, no NPM package to fight (`pnpm dlx shadcn add ...`).
 - Inherits your shadcn theme automatically — no CSS overrides.
 - Generic types preserve user-extended task data through render-prop closures.
-- Headless interaction hooks are opt-in — display-only is the default.
+- Headless interaction hooks (drag, resize, drag-to-create) are opt-in — display-only is the default.
 - Built for React 19 + TS 5; modern function-component pattern.
 
-## Where shaduler loses (today)
+## Bring your own
 
-- No month / agenda / year views.
-- No recurring-event parsing (use `rrule` or similar at the data layer, then pass expanded instances).
-- No native timezone / DST handling — keep that at the data layer.
-- No keyboard arrow navigation between cells (Tab through tasks works).
+shaduler stays small on purpose. A few things you'll handle at the data layer or with your own UI:
+
+- **Month / agenda / year views.** shaduler renders one day or week at a time — anything zoomed-out is outside its scope.
+- **Recurring events.** Expand the rule into concrete instances upstream and pass them in.
+- **Timezones & DST.** Normalize timestamps before they reach the grid.
+- **Persistence, undo, conflict resolution.** The grid emits events; what you do with them is yours.
+
+## Still to come
+
+- Keyboard arrow navigation between cells (Tab through tasks already works).

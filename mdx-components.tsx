@@ -16,6 +16,7 @@ import { DemoAllDay } from '@/components/demos/all-day'
 import { DemoCrossMidnight } from '@/components/demos/cross-midnight'
 import { DemoGroupedColumns } from '@/components/demos/grouped-columns'
 import { DemoFullCustomization } from '@/components/demos/full-customization'
+import { LandingHeroDemo } from '@/components/demos/landing-hero'
 
 /**
  * Components made available inside MDX files. Extend this map when you want
@@ -43,6 +44,7 @@ export function getMDXComponents(
     DemoCrossMidnight,
     DemoGroupedColumns,
     DemoFullCustomization,
+    LandingHeroDemo,
     ...components,
   }
 }

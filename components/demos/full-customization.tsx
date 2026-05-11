@@ -33,6 +33,7 @@ import {
   ShadulerTimeSlot,
   calculateShadulerData,
   composeShadulerTaskProps,
+  formatTime,
   minutesToTime,
   timeToMinutes,
   useShadulerRangeSelect,
@@ -114,6 +115,19 @@ const TIME_INTERVAL_MIN = 15
 const DEFAULT_TASK_DURATION_MIN = 60
 const DEFAULT_WORK_START = 9
 const DEFAULT_WORK_END = 17
+
+const LOCALES: ReadonlyArray<{
+  id: string
+  label: string
+  format: '12h' | '24h'
+}> = [
+  { id: 'en-US', label: 'English (US)', format: '12h' },
+  { id: 'en-GB', label: 'English (UK)', format: '24h' },
+  { id: 'de-DE', label: 'Deutsch', format: '24h' },
+  { id: 'fr-FR', label: 'Français', format: '24h' },
+  { id: 'es-ES', label: 'Español', format: '24h' },
+  { id: 'ja-JP', label: '日本語', format: '24h' },
+]
 
 type ViewMode = '1' | '3' | '7'
 
@@ -199,6 +213,12 @@ type DemoTask = ShadulerTaskData & {
   resourceId: string
   dateKey: string
   type: TaskType
+  /**
+   * If set, marks this task as one half of a single canonical event split at
+   * the midnight boundary. `'top'` ends at 23:59 (flat bottom corners),
+   * `'bottom'` starts at 00:00 (flat top corners). Set on pre-split seed data.
+   */
+  crossMidnightHalf?: 'top' | 'bottom'
 }
 
 type TaskDraft = {
@@ -378,6 +398,31 @@ const INITIAL_TASKS: DemoTask[] = (() => {
       endTime: '14:30',
       type: 'meeting',
     },
+    // Pre-split cross-midnight event — one "Night shift" spanning day0 23:00
+    // through day1 01:00, rendered as two linked halves with flat inner
+    // corners so the eye reads them as continuous across the day boundary.
+    {
+      id: 'seed-night-1',
+      dateKey: day0,
+      resourceId: 'clara',
+      column: buildColumnId(day0, 'clara'),
+      name: 'Night shift →',
+      startTime: '23:00',
+      endTime: '23:59',
+      type: 'focus',
+      crossMidnightHalf: 'top',
+    },
+    {
+      id: 'seed-night-2',
+      dateKey: day1,
+      resourceId: 'clara',
+      column: buildColumnId(day1, 'clara'),
+      name: '← Night shift',
+      startTime: '00:00',
+      endTime: '01:00',
+      type: 'focus',
+      crossMidnightHalf: 'bottom',
+    },
   ]
 })()
 
@@ -388,7 +433,7 @@ const INITIAL_TASKS: DemoTask[] = (() => {
 export function DemoFullCustomization() {
   const [view, setView] = React.useState<ViewMode>('3')
   const [currentDate, setCurrentDate] = React.useState<Date>(TODAY)
-  const [stackedHeaders, setStackedHeaders] = React.useState(true)
+  const [stackedHeaders, setStackedHeaders] = React.useState(false)
   const [tasks, setTasks] = React.useState<DemoTask[]>(INITIAL_TASKS)
 
   const [newTaskDraft, setNewTaskDraft] = React.useState<TaskDraft | null>(null)
@@ -419,6 +464,9 @@ export function DemoFullCustomization() {
   const [allowOverlap, setAllowOverlap] = React.useState(false)
   const [allowOutsideHours, setAllowOutsideHours] = React.useState(false)
   const [snapMin, setSnapMin] = React.useState(15)
+  const [localeId, setLocaleId] = React.useState('en-GB')
+  const localeOption =
+    LOCALES.find((l) => l.id === localeId) ?? LOCALES[0]
 
   // Refs for fresh values inside stable hook callbacks
   const tasksRef = React.useRef(tasks)
@@ -857,6 +905,8 @@ export function DemoFullCustomization() {
       <div
         className={cn(
           'relative isolate flex flex-col overflow-hidden rounded-lg',
+          !fullscreen &&
+            'shadow-2xl shadow-slate-900/10 dark:shadow-black/40',
           fullscreen ? 'min-h-0 flex-1' : 'h-[600px]',
         )}
         onMouseMove={handleMouseMove}
@@ -1123,6 +1173,30 @@ export function DemoFullCustomization() {
 
                 <Separator />
 
+                {/* Locale */}
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs font-normal text-slate-700 dark:text-white/70">
+                    Locale
+                  </Label>
+                  <Select
+                    value={localeId}
+                    onValueChange={(v) => setLocaleId(v)}
+                  >
+                    <SelectTrigger className={cn('h-8 w-[130px] text-xs', GLASS_BUTTON)}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className={cn('max-h-56', GLASS_PANEL)}>
+                      {LOCALES.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
                 {/* Toggles */}
                 <div className="flex flex-col gap-3">
                   <ToggleRow
@@ -1157,7 +1231,7 @@ export function DemoFullCustomization() {
       </div>
 
       <div className="min-h-0 flex-1">
-        <Shaduler className="border-0 bg-transparent text-slate-900 dark:text-white">
+        <Shaduler className="rounded-t-none border-0 bg-transparent text-slate-900 dark:text-white">
           <ShadulerContent>
             <ShadulerColumnsHeader
             gridTemplateColumns={calc.gridTemplateColumns}
@@ -1204,6 +1278,8 @@ export function DemoFullCustomization() {
           >
             <ShadulerTimeColumn
               rows={calc.rows}
+              locale={localeOption.id}
+              timeFormat={localeOption.format}
               className="bg-white/30 text-slate-700 backdrop-blur-md dark:bg-white/5 dark:text-white/80"
             >
               {calc.rows.map((row, i) => {
@@ -1226,7 +1302,7 @@ export function DemoFullCustomization() {
                             : 'bg-rose-500/15 text-rose-900 ring-rose-500/50 dark:bg-rose-500/30 dark:text-rose-100 dark:ring-rose-300/40',
                         )}
                       >
-                        {String(row.hour).padStart(2, '0')}:00
+                        {formatTime(row.hour, localeOption.format, localeOption.id)}
                         <span className="uppercase tracking-wide opacity-80">
                           {isOpen ? 'Open' : 'Close'}
                         </span>
@@ -1238,7 +1314,7 @@ export function DemoFullCustomization() {
                           i === 0 ? 'top-2' : '-top-3',
                         )}
                       >
-                        {String(row.hour).padStart(2, '0')}:00
+                        {formatTime(row.hour, localeOption.format, localeOption.id)}
                       </span>
                     )}
                   </ShadulerTimeSlot>
@@ -1302,6 +1378,10 @@ export function DemoFullCustomization() {
                             className={cn(
                               'group/task flex h-full w-full flex-col gap-0.5 overflow-hidden rounded-lg border px-2 py-1.5 backdrop-blur-md shadow-lg transition-shadow duration-200 hover:shadow-xl',
                               cfg.glassClass,
+                              pos.task.crossMidnightHalf === 'top' &&
+                                'rounded-b-none',
+                              pos.task.crossMidnightHalf === 'bottom' &&
+                                'rounded-t-none',
                             )}
                           >
                             <div className="flex items-center gap-1.5">

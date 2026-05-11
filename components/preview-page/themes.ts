@@ -202,6 +202,56 @@ export const RADIUS_OPTIONS = [
 ] as const
 
 /**
+ * Local mapping of shadcn's seven style IDs onto a 3-tier density. Their
+ * styles control component-level details we don't render (button shapes,
+ * borders, elevation) — we surface them as a row-height / header-padding
+ * choice so the picker still produces a visible difference, while the URL
+ * preset code keeps the exact shadcn ID for cross-site interop.
+ */
+export type StyleDensity = 'compact' | 'default' | 'comfortable'
+
+export type StylePreset = {
+  id: string
+  label: string
+  density: StyleDensity
+}
+
+export const STYLES: readonly StylePreset[] = [
+  // Nova is shadcn's index-0 default — keeping it at our "default" density so
+  // an untouched /preview lands on the familiar 60-px grid instead of a
+  // compact one.
+  { id: 'nova', label: 'Nova', density: 'default' },
+  { id: 'vega', label: 'Vega', density: 'compact' },
+  { id: 'maia', label: 'Maia', density: 'comfortable' },
+  { id: 'lyra', label: 'Lyra', density: 'default' },
+  { id: 'mira', label: 'Mira', density: 'compact' },
+  { id: 'luma', label: 'Luma', density: 'comfortable' },
+  { id: 'sera', label: 'Sera', density: 'default' },
+]
+
+/** Concrete tokens each density tier applies inside `<PreviewCanvas />`. */
+export const DENSITY_TOKENS: Record<
+  StyleDensity,
+  { hourHeight: number; headerPadding: string; cellPadding: string }
+> = {
+  compact: {
+    hourHeight: 48,
+    headerPadding: 'py-2',
+    cellPadding: '',
+  },
+  default: {
+    hourHeight: 60,
+    headerPadding: 'py-3',
+    cellPadding: '',
+  },
+  comfortable: {
+    hourHeight: 72,
+    headerPadding: 'py-4',
+    cellPadding: '',
+  },
+}
+
+/**
  * Compose the final variable set for a chosen palette + accent + radius +
  * mode, plus optional pasted overrides that win over everything else.
  */

@@ -1,0 +1,148 @@
+---
+title: Animated loop
+description: Looped storyboard with enter / exit / slide / color-change animations — the grid reads like a short video.
+---
+
+A choreographed reel that makes shaduler feel alive on a marketing surface. Tasks enter from the left, change status (colour-shift in place), slide to a new time slot, and exit — one beat at a time. The state machine is a simple array of frames; `motion` drives the transitions.
+
+<Preview>
+  <LandingHeroDemo />
+</Preview>
+
+## Install `motion`
+
+The transitions below are driven by the [motion](https://motion.dev) package (the v12 successor to framer-motion). shaduler itself doesn't pull it in — install it alongside the component:
+
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add motion
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    npm install motion
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn add motion
+    ```
+  </Tab>
+  <Tab value="bun">
+    ```bash
+    bun add motion
+    ```
+  </Tab>
+</Tabs>
+
+```tsx
+import { AnimatePresence, motion } from 'motion/react'
+```
+
+## Storyboard, not state
+
+Instead of randomly mutating tasks, define an explicit script. Each frame is the **complete** task list at that point — when the array advances, only the items that differ animate.
+
+```ts
+const FRAME_MS = 2500
+
+const STANDUP = { id: 'standup', column: 'a', name: 'Daily standup', startTime: '09:00', endTime: '10:00', status: 'scheduled' }
+const DESIGN  = { id: 'design',  column: 'b', name: 'Design review', startTime: '09:30', endTime: '11:00', status: 'scheduled' }
+const FOCUS   = { id: 'focus',   column: 'c', name: 'Focus block',   startTime: '10:00', endTime: '12:30', status: 'scheduled' }
+
+const STORY = [
+  [],                                                                    // 0  empty
+  [STANDUP],                                                              // 1  enter: standup
+  [STANDUP, DESIGN],                                                      // 2  enter: design
+  [{ ...STANDUP, status: 'in_progress' }, DESIGN],                        // 3  status flip
+  [{ ...STANDUP, status: 'in_progress' }, DESIGN, FOCUS],                 // 4  enter: focus
+  [{ ...STANDUP, status: 'done' }, DESIGN, FOCUS],                        // 5  status flip
+  [DESIGN, FOCUS],                                                        // 6  exit: standup
+  [{ ...DESIGN, status: 'in_progress' }, FOCUS],                          // 7  status flip
+  [{ ...DESIGN, status: 'in_progress' }, { ...FOCUS, startTime: '11:30', endTime: '14:00' }],  // 8  slide DOWN
+  // … and so on, ending with [] so the loop restarts cleanly
+]
+
+function useFrame() {
+  const [i, setI] = React.useState(0)
+  React.useEffect(() => {
+    const id = window.setInterval(() => setI((n) => (n + 1) % STORY.length), FRAME_MS)
+    return () => window.clearInterval(id)
+  }, [])
+  return STORY[i]
+}
+```
+
+**One change per frame.** Two simultaneous animations (e.g. a status flip and an enter at the same beat) read as noise. Splitting them into separate frames keeps the user's eye on a single moving target.
+
+## Bypass `ShadulerTask` for full enter / exit control
+
+`ShadulerTask` is great for static rendering, but `<AnimatePresence>` needs `motion`-aware children with stable keys so it can run exit transitions before unmount. So replicate the positioning math (`left = (colIndex / total) * 100%`, `width = 90 / total`) inside a custom card and skip `ShadulerTask`.
+
+```tsx
+<ShadulerTasksOverlay {...calc} columns={COLUMNS} startHour={9} endHour={14} hourHeight={72}>
+  {(positions, cols) => (
+    <AnimatePresence>
+      {(cols ?? []).flatMap((column, colIndex) => {
+        const total = (cols ?? []).length
+        return (positions[column.id] ?? []).map((pos) => (
+          <FancyTaskCard
+            key={pos.task.id}
+            task={pos.task}
+            top={pos.top}
+            height={pos.height}
+            colIndex={colIndex}
+            totalCols={total}
+          />
+        ))
+      })}
+    </AnimatePresence>
+  )}
+</ShadulerTasksOverlay>
+```
+
+## The three animation systems, and which one owns what
+
+Three different mechanisms run side by side. Pick carefully — they fight if more than one tries to own the same property.
+
+| What animates | Driver | Why |
+|---|---|---|
+| `scaleX` (left → right reveal), `opacity` | `motion`'s `animate` + `<AnimatePresence>` | Only motion knows when a key is about to leave the tree, which is what we need for exit transitions. |
+| `top`, `height` (slide up / down) | `motion`'s `animate` (also) | `motion.div` rewrites inline `style` on every animation frame, so a CSS `transition` set on those properties on the same element gets swallowed. Letting motion drive them sidesteps that. |
+| `background-color`, `border-color`, `color` (status flip) | Plain CSS `transition` in `style` | Motion doesn't touch these, so a CSS transition fires reliably when the className swaps. Tailwind's `transition-colors` class **doesn't** work here because inline `style.transition` overrides it. |
+
+```tsx
+<motion.div
+  // top / height in initial = their target values, so a fresh mount
+  // doesn't slide down from 0; only scaleX + opacity animate on entry.
+  initial={{ scaleX: 0, opacity: 0, top, height }}
+  animate={{ scaleX: 1, opacity: 1, top, height }}
+  exit={{ scaleX: 0, opacity: 0 }}
+  transition={{
+    scaleX: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
+    opacity: { duration: 0.5 },
+    top: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
+    height: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
+  }}
+  style={{
+    position: 'absolute',
+    left: `${left}%`,
+    width: `${width}%`,
+    transformOrigin: 'left center', // anchor the scaleX reveal
+    transition: [
+      'background-color 0.7s ease-in-out',
+      'border-color 0.7s ease-in-out',
+      'color 0.7s ease-in-out',
+    ].join(', '),
+  }}
+  className={cn('rounded-lg border px-3 py-2 shadow-sm', tokens.card)}
+>
+  {/* card body — name, time, status badge, avatar */}
+</motion.div>
+```
+
+## A few choices that matter
+
+- **Stable task `id`** across frames is what tells `<AnimatePresence>` "same element, just new props" — without it, every frame would unmount-remount and the slide / colour change would never get a chance to interpolate.
+- **`transformOrigin: 'left center'`** is what makes `scaleX: 0 → 1` look like an "unrolling" reveal rather than a centred zoom.

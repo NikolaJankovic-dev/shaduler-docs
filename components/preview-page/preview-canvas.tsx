@@ -15,13 +15,13 @@ import {
   calculateShadulerData,
   type ShadulerTaskData,
 } from '@/components/ui/shaduler'
+import { DENSITY_TOKENS, type StyleDensity } from './themes'
 
 type Variant = 'default' | 'secondary' | 'outline' | 'destructive'
 type DemoTask = ShadulerTaskData & { variant?: Variant }
 
 const START_HOUR = 8
 const END_HOUR = 19
-const HOUR_HEIGHT_PX = 56
 
 const columns = [
   { id: 'a', label: 'Anna' },
@@ -41,7 +41,23 @@ const tasks: DemoTask[] = [
   { id: 9, column: 'c', name: 'Retro', startTime: '17:00', endTime: '18:00', variant: 'secondary' },
 ]
 
-export function PreviewCanvas() {
+interface PreviewCanvasProps {
+  /** Maps to ShadulerGrid row height and ShadulerColumnHeader vertical padding. */
+  density?: StyleDensity
+  /** When set, ShadulerColumnHeader labels use this CSS `fontFamily` value. */
+  headingFontCssVar?: string
+}
+
+export function PreviewCanvas({
+  density = 'default',
+  headingFontCssVar,
+}: PreviewCanvasProps = {}) {
+  const tokens = DENSITY_TOKENS[density]
+  const hourHeight = tokens.hourHeight
+  const headerStyle = headingFontCssVar
+    ? { fontFamily: headingFontCssVar }
+    : undefined
+
   const calc = React.useMemo(
     () =>
       calculateShadulerData<DemoTask>(
@@ -49,9 +65,9 @@ export function PreviewCanvas() {
         tasks,
         START_HOUR,
         END_HOUR,
-        HOUR_HEIGHT_PX,
+        hourHeight,
       ),
-    [],
+    [hourHeight],
   )
 
   return (
@@ -61,25 +77,35 @@ export function PreviewCanvas() {
           <ShadulerColumnsHeader gridTemplateColumns={calc.gridTemplateColumns}>
             <ShadulerCorner />
             {columns.map((c, i) => (
-              <ShadulerColumnHeader key={c.id} column={c} columnIndex={i} />
+              <ShadulerColumnHeader
+                key={c.id}
+                column={c}
+                columnIndex={i}
+                className={tokens.headerPadding}
+                style={headerStyle}
+              />
             ))}
           </ShadulerColumnsHeader>
           <ShadulerGrid
             gridTemplateColumns={calc.gridTemplateColumns}
             gridTemplateRows={calc.gridTemplateRows}
           >
-            <ShadulerTimeColumn startTime={START_HOUR} endTime={END_HOUR} />
+            <ShadulerTimeColumn
+              startTime={START_HOUR}
+              endTime={END_HOUR}
+              hourHeight={hourHeight}
+            />
             <ShadulerCells
               rows={calc.rows}
               columns={columns}
-              hourHeight={HOUR_HEIGHT_PX}
+              hourHeight={hourHeight}
             />
             <ShadulerTasksOverlay
               taskPositions={calc.taskPositions}
               columns={columns}
               startHour={START_HOUR}
               endHour={END_HOUR}
-              hourHeight={HOUR_HEIGHT_PX}
+              hourHeight={hourHeight}
             >
               {(taskPositions) =>
                 columns.map((column, colIndex) =>
