@@ -1,9 +1,9 @@
 /**
- * Fonts available in the /preview page font picker.
+ * Fonts available in the /create page font picker.
  *
  * Each Google font is loaded via `next/font/google` so Next.js handles
  * preloading, fallback, and self-hosting at build time. Each gets its own
- * CSS variable; we apply all variables on the preview layout wrapper, and
+ * CSS variable; we apply all variables on the create layout wrapper, and
  * the picker swaps which one the canvas's `fontFamily` resolves to.
  *
  * The list and grouping (Sans / Mono / Serif) match shadcn's /create page.
@@ -108,7 +108,7 @@ const instrumentSerif = Instrument_Serif({
 })
 
 /** Joined `.variable` className string — apply to a wrapper to load all fonts. */
-export const PREVIEW_FONT_VARIABLES = [
+export const CREATE_FONT_VARIABLES = [
   inter.variable,
   geist.variable,
   dmSans.variable,

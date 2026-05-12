@@ -48,7 +48,7 @@ import {
   type ThemeMode,
 } from './themes'
 
-interface PreviewControlsProps {
+interface CreateControlsProps {
   palette: Palette
   onPaletteChange: (p: Palette) => void
   accent: Accent
@@ -72,7 +72,7 @@ interface PreviewControlsProps {
   onCreateProject: () => void
 }
 
-export function PreviewControls({
+export function CreateControls({
   palette,
   onPaletteChange,
   accent,
@@ -93,7 +93,7 @@ export function PreviewControls({
   onReset,
   onToggleTheme,
   onCreateProject,
-}: PreviewControlsProps) {
+}: CreateControlsProps) {
   const [copiedTarget, setCopiedTarget] = React.useState<
     'preset' | 'css' | null
   >(null)
@@ -359,7 +359,7 @@ export function PreviewControls({
           type="button"
           onClick={handleCopyPreset}
           title="Copy preset code"
-          className="truncate rounded-md border bg-fd-card px-3 py-2 text-left font-mono text-xs transition hover:bg-fd-muted"
+          className="truncate rounded-md border bg-fd-card px-3 py-2 text-center font-mono text-xs transition hover:bg-fd-muted"
         >
           {copiedTarget === 'preset' ? 'Copied' : `--preset ${presetCode}`}
         </button>

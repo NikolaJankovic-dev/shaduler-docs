@@ -41,17 +41,17 @@ const tasks: DemoTask[] = [
   { id: 9, column: 'c', name: 'Retro', startTime: '17:00', endTime: '18:00', variant: 'secondary' },
 ]
 
-interface PreviewCanvasProps {
+interface CreateCanvasProps {
   /** Maps to ShadulerGrid row height and ShadulerColumnHeader vertical padding. */
   density?: StyleDensity
   /** When set, ShadulerColumnHeader labels use this CSS `fontFamily` value. */
   headingFontCssVar?: string
 }
 
-export function PreviewCanvas({
+export function CreateCanvas({
   density = 'default',
   headingFontCssVar,
-}: PreviewCanvasProps = {}) {
+}: CreateCanvasProps = {}) {
   const tokens = DENSITY_TOKENS[density]
   const hourHeight = tokens.hourHeight
   const headerStyle = headingFontCssVar

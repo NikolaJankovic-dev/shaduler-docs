@@ -1,8 +1,8 @@
 import { Suspense } from 'react'
-import { PreviewPage } from '@/components/preview-page/preview-page'
+import { CreatePage } from '@/components/create-page/create-page'
 
 export const metadata = {
-  title: 'Preview — shaduler',
+  title: 'Create — shaduler',
   description:
     'Tweak shadcn theme tokens (palette, accent, radius) and see shaduler render live. Paste your project theme to preview the exact match.',
 }
@@ -13,7 +13,7 @@ export const metadata = {
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <PreviewPage />
+      <CreatePage />
     </Suspense>
   )
 }

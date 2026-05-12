@@ -1,5 +1,5 @@
 /**
- * Theme presets for the /preview page.
+ * Theme presets for the /create page.
  *
  * Each preset is a full set of shadcn-style CSS custom properties for both
  * light and dark mode. We use the same variable names that the shaduler
@@ -8,7 +8,7 @@
  *
  * Values are approximated from shadcn's standard themes — if you want exact
  * parity, copy the block from ui.shadcn.com and paste it into the "Paste"
- * field on /preview.
+ * field on /create.
  */
 
 export type ThemeMode = 'light' | 'dark'
@@ -218,7 +218,7 @@ export type StylePreset = {
 
 export const STYLES: readonly StylePreset[] = [
   // Nova is shadcn's index-0 default — keeping it at our "default" density so
-  // an untouched /preview lands on the familiar 60-px grid instead of a
+  // an untouched /create lands on the familiar 60-px grid instead of a
   // compact one.
   { id: 'nova', label: 'Nova', density: 'default' },
   { id: 'vega', label: 'Vega', density: 'compact' },
@@ -229,7 +229,7 @@ export const STYLES: readonly StylePreset[] = [
   { id: 'sera', label: 'Sera', density: 'default' },
 ]
 
-/** Concrete tokens each density tier applies inside `<PreviewCanvas />`. */
+/** Concrete tokens each density tier applies inside `<CreateCanvas />`. */
 export const DENSITY_TOKENS: Record<
   StyleDensity,
   { hourHeight: number; headerPadding: string; cellPadding: string }

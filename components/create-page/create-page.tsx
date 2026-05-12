@@ -16,9 +16,9 @@ import {
 import {
   CreateProjectDialog,
   OpenPresetDialog,
-  PreviewControls,
-} from './preview-controls'
-import { PreviewCanvas } from './preview-canvas'
+  CreateControls,
+} from './create-controls'
+import { CreateCanvas } from './create-canvas'
 import {
   decodePreset,
   encodePreset,
@@ -36,7 +36,7 @@ import {
   shadcnStyleToOur,
 } from './preset-codec'
 
-export function PreviewPage() {
+export function CreatePage() {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   React.useEffect(() => setMounted(true), [])
@@ -87,7 +87,7 @@ export function PreviewPage() {
         handleReset()
       } else if (k === 'r' && !e.shiftKey) {
         e.preventDefault()
-        // Inline shuffle so it stays in sync with PreviewControls' version.
+        // Inline shuffle so it stays in sync with CreateControls' version.
         const pick = <T,>(arr: readonly T[]) =>
           arr.length <= 1
             ? arr[0]
@@ -98,10 +98,9 @@ export function PreviewPage() {
         setRadius(pick(RADIUS_OPTIONS).value)
         setStyle(STYLES[Math.floor(Math.random() * STYLES.length)])
         setHeadingFont(pick(PREVIEW_FONTS))
-      } else if (k === 'd' && !e.shiftKey) {
-        e.preventDefault()
-        handleToggleTheme()
       }
+      // 'd' (theme toggle) is handled globally by <ThemeShortcut /> in the root
+      // layout so it works on every page, not just /create.
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
@@ -231,7 +230,7 @@ export function PreviewPage() {
   return (
     <main className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-6 py-10">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">Preview</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Create</h1>
         <p className="max-w-2xl text-sm text-fd-muted-foreground">
           Pick a base palette, accent, font, and radius to see how shaduler
           looks against your project's tokens. The URL stays a shareable preset
@@ -241,7 +240,7 @@ export function PreviewPage() {
       </header>
 
       <div className="flex flex-col gap-6 lg:flex-row">
-        <PreviewControls
+        <CreateControls
           palette={palette}
           onPaletteChange={setPalette}
           accent={accent}
@@ -275,7 +274,7 @@ export function PreviewPage() {
             }
             className="rounded-lg"
           >
-            <PreviewCanvas
+            <CreateCanvas
               density={style.density}
               headingFontCssVar={headingFont.cssVar}
             />

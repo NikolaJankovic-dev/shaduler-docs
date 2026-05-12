@@ -30,8 +30,8 @@ export const baseOptions: BaseLayoutProps = {
       active: 'nested-url',
     },
     {
-      text: 'Preview',
-      url: '/preview',
+      text: 'Create',
+      url: '/create',
       active: 'nested-url',
     },
     {

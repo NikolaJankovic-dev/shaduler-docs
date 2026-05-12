@@ -3,16 +3,102 @@ title: Hooks
 description: Three opt-in headless hooks for drag, resize, and range-select.
 ---
 
-> Placeholder — full hook reference coming next iteration.
+Drag, resize, and range-select live in three opt-in hooks. Each returns small `getXProps(task)` helpers that you spread onto `<ShadulerTask>` or `<ShadulerCell>` — the visual is yours, the gesture math is theirs.
 
-## Available hooks
+None of them own task state. Updates flow back through your props on the next render.
 
-- `useShadulerTaskResize` — drag bottom edge of a task to change `endTime`
-- `useShadulerTaskDrag` — drag a task between columns/times (with click-vs-drag threshold so `onClick` still works)
-- `useShadulerRangeSelect` — drag across cells to define a new time range (drag-to-create)
+## `useShadulerTaskResize`
 
-Plus a tiny merger:
+Drag the bottom edge of a task to change its `endTime`. A resize handle appears at the bottom of the task when `onResizeStart` is wired.
 
-- `composeShadulerTaskProps(...sources)` — combines props from multiple hooks into one object you can spread on `<ShadulerTask>`
+```tsx
+const { getResizeProps, resizingTaskId } = useShadulerTaskResize({
+  hourHeight: HOUR_HEIGHT_PX,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onResize: (id, { endTime }) => {
+    // optional: render a live preview while the user drags
+  },
+  onResizeEnd: (id, { endTime }) =>
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, endTime } : t)),
+    ),
+})
 
-Detailed examples coming next iteration.
+<ShadulerTask {...getResizeProps(task)} task={task} /* ... */ />
+```
+
+`onResize` fires every pointermove; commit to durable state in `onResizeEnd`. `minDurationMinutes` (default 15) rejects too-short drags. `timeInterval` (default 15) snaps the result.
+
+## `useShadulerTaskDrag`
+
+Drag a task to a new column and time. Duration is preserved.
+
+```tsx
+const gridRef = React.useRef<HTMLDivElement>(null)
+
+const { getTaskDragProps, draggingTaskId } = useShadulerTaskDrag({
+  gridRef,
+  columns,
+  hourHeight: HOUR_HEIGHT_PX,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onDragEnd: (id, { column, startTime, endTime }) =>
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === id ? { ...t, column, startTime, endTime } : t,
+      ),
+    ),
+})
+
+<ShadulerGrid ref={gridRef} /* ... */>
+  <ShadulerTask {...getTaskDragProps(task)} task={task} /* ... */ />
+</ShadulerGrid>
+```
+
+**Click vs drag.** Pointer movement under `clickThresholdPx` (default 4) counts as a click — `onDragEnd` doesn't fire and the task's own `onClick` runs normally. Past the threshold the gesture is a real drag, and the synthetic click after release is suppressed automatically.
+
+**Touch.** Set `dragHandleOnly` on `<ShadulerTask>` and mark an inner element with `data-shaduler-drag-handle`. The task body then stays scrollable on touch devices, and drag is initiated from the handle only.
+
+## `useShadulerRangeSelect`
+
+Drag across cells inside one column to define a time range — the building block for drag-to-create.
+
+```tsx
+const gridRef = React.useRef<HTMLDivElement>(null)
+
+const { getCellProps, activeRange, isSelecting } = useShadulerRangeSelect({
+  gridRef,
+  hourHeight: HOUR_HEIGHT_PX,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onSelect: (range) => openNewTaskDialog(range),
+})
+
+<ShadulerCells
+  rows={calc.rows}
+  columns={columns}
+  hourHeight={HOUR_HEIGHT_PX}
+  cellProps={getCellProps()}
+/>
+```
+
+While the user drags, `activeRange` is `{ columnId, startMinutes, endMinutes }` — use it to render a preview overlay. `onSelectChange` fires every pointermove; `onSelect` fires once on release.
+
+## `composeShadulerTaskProps`
+
+Combine resize, drag, and selection state into a single props object before spreading on `<ShadulerTask>`:
+
+```tsx
+const taskProps = composeShadulerTaskProps(
+  resizeEnabled && getResizeProps(task),
+  dragEnabled && getTaskDragProps(task),
+  { isSelecting },
+)
+
+<ShadulerTask {...taskProps} task={task} /* ... */ />
+```
+
+First defined `onResizeStart` / `onTaskDragStart` wins; `isDragging` / `isSelecting` OR across sources. Falsy entries are skipped, so the `enabled && hookProps` shortcut works without extra branching.
+
+See the [Full interactivity](/docs/recipes/full-interactivity) recipe for a complete working example that wires all three hooks together.

@@ -14,7 +14,7 @@ shaduler is a **time-grid primitive** for shadcn/ui — like TanStack Table for 
 
 ## Design philosophy
 
-1. **Primitives first.** Twelve sub-components (`Shaduler`, `ShadulerHeader`, `ShadulerGrid`, …) compose into the layout you want. No black-box monolith.
+1. **Primitives first.** Fifteen sub-components (`Shaduler`, `ShadulerHeader`, `ShadulerGrid`, …) compose into the layout you want. No black-box monolith.
 2. **Headless interactions.** Drag, resize, and range-select live in three opt-in hooks (`useShadulerTaskResize`, `useShadulerTaskDrag`, `useShadulerRangeSelect`). Display-only mode is one render away.
 3. **shadcn theme native.** Every color is a CSS variable. Every primitive carries a `data-slot` for theming hooks. Tasks render as standard shadcn variants (`default`, `secondary`, `outline`, `destructive`, …).
 4. **Time-of-day grid.** Y axis is always time. Multi-day events live in the separate `ShadulerAllDayStrip`. Cross-midnight events split at the data layer.

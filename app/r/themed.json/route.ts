@@ -6,14 +6,14 @@ import {
   shadcnAccentToOur,
   shadcnPaletteToOur,
   shadcnRadiusToOur,
-} from '@/components/preview-page/preset-codec'
+} from '@/components/create-page/preset-codec'
 import {
   ACCENTS,
   PALETTES,
   RADIUS_OPTIONS,
   composeThemeVars,
   type ThemeVars,
-} from '@/components/preview-page/themes'
+} from '@/components/create-page/themes'
 
 /**
  * Themed shaduler registry endpoint. Reads the static `shaduler.json` artifact,

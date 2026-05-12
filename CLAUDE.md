@@ -11,16 +11,16 @@ Install URL: `https://shaduler.vercel.app/r/shaduler.json`.
 ## Repo layout (key paths)
 
 ```
-app/                          Next.js 16 App Router (docs, preview, home)
+app/                          Next.js 16 App Router (docs, create, home, embed/hero, api/search)
 content/docs/                 MDX content (one file per page)
-  recipes/                    11+ recipe pages with live demos
+  recipes/                    14 recipe pages with live demos
 components/
   ui/
     shaduler.tsx              the component itself — source of truth
-    __tests__/                vitest specs (128 specs)
+    __tests__/                vitest specs (141 specs)
     {button,popover,dialog,…} shadcn pieces installed via CLI
   demos/                      live <Shaduler /> previews used inside MDX
-  preview-page/               /preview controls + canvas
+  create-page/                /create controls + canvas
 registry.json                 shadcn registry source (build → public/r/shaduler.json)
 public/r/shaduler.json        generated registry artifact (commit it)
 ```
@@ -30,57 +30,40 @@ public/r/shaduler.json        generated registry artifact (commit it)
 Edit `components/ui/shaduler.tsx` directly, then run:
 
 ```bash
-pnpm test             # 128 specs should pass
+pnpm test             # 141 specs should pass
 pnpm registry:build   # regenerate public/r/shaduler.json
 ```
 
 Commit both files. There is no sync step anymore (was deprecated 2026-05-10
 when the separate `../shaduler` repo was folded in).
 
-## Open work (TODO)
+## Standing constraint — Scope page
 
-### Marketing / positioning
+`content/docs/comparison.mdx` (sidebar label "Scope") positions shaduler as a
+resource × time grid with a *bring-your-own* philosophy. **Don't name or
+recommend competing libraries** (FullCalendar, RBC, Schedule-X, etc.) anywhere
+in the copy — user explicitly cut that. Out-of-scope items (month view,
+recurring, timezones) are reframed as "you handle this upstream", not "use
+library X". Real gaps go under "Still to come". Applies to any future edit of
+that page.
 
-- **Landing page live demo** — `app/(home)/page.tsx` is hero + buttons only.
-  Embed a live `<Shaduler />` (probably one of the `components/demos/` ones)
-  above the fold so the value is visible without clicking into `/docs`.
-- **GitHub README imagery** — `README.md` is text-only. Add screenshots / GIFs
-  near the top (full-customization demo + a plain grid) so the GitHub landing
-  has visual proof of what the thing looks like.
-- **Scope page** (`content/docs/comparison.mdx`, sidebar label "Scope") —
-  positions shaduler as a resource × time grid with a *bring-your-own*
-  philosophy. **Don't name or recommend competing libraries** (FullCalendar,
-  RBC, Schedule-X, etc.) anywhere in the copy — user explicitly cut that.
-  Out-of-scope items (month view, recurring, timezones) are reframed as
-  "you handle this upstream", not "use library X". Real gaps go under
-  "Still to come".
-
-### `/preview` page (theme picker)
-
-- **Shuffle button** — random combination of palette / accent / font / radius,
-  next to Copy CSS in the sidebar bottom block. Skip index 0 (the pinned
-  Neutral/Default entries) when picking. State setters already exist on
-  `<PreviewControls>` props.
+## Notes
 
 ### Full-customization recipe (`components/demos/full-customization.tsx`)
 
 Premium kitchen-sink demo. Built around four `GLASS_*` constants at the top
 of the file (panel / button / input / ghost) — change them and the whole UI
 updates. Light theme = blue/sky gradient, dark = navy. Spotlight follows
-pointer.
+pointer. Cross-midnight is currently pre-split via `crossMidnightHalf:
+'top'|'bottom'` on the task objects (not the `splitAcrossMidnight` helper).
 
-Pending polish:
+### Hero GIF (`hero.gif`, `hero-dark.gif`)
 
-1. **Drop the top border-radius on the Shaduler element** inside this demo
-   so the toolbar sits flush against the grid top. Only the bottom corners
-   stay rounded.
-2. **Outer drop shadow** around the whole demo preview wrapper.
-3. **Locale Select** in the Settings popover (next to View / Working hours /
-   Snap interval) — forward to `ShadulerTimeColumn.locale` + `formatTime`.
-   Pattern already used in the `locales` recipe.
-4. **Cross-midnight events** — bring in `splitAcrossMidnight` helper from the
-   `cross-midnight` recipe. Visual: pre-midnight half gets `rounded-t-lg`,
-   post-midnight half gets `rounded-b-lg` only on the inner glass card.
+Embedded at the top of README via a `<picture>` element that swaps based on
+GitHub's prefers-color-scheme. Regenerate with `pnpm record:hero` (light) or
+`pnpm record:hero --dark`. Requires the site running locally
+(`pnpm build && pnpm start`). Playwright + ffmpeg come in via devDeps — no
+system install needed. See `scripts/record-hero.mjs`.
 
 ## Memory across machines
 
