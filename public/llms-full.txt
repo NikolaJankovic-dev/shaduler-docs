@@ -1,0 +1,1693 @@
+# shaduler — full documentation
+
+> A composable scheduler grid for shadcn/ui. Single `.tsx` file, opt-in headless hooks, theme tokens that follow your existing shadcn variables.
+>
+> This file concatenates every page on https://shaduler.com/docs in sidebar order, intended for LLM ingestion. Each section starts with the page URL so you can cite it. The shorter summary lives at https://shaduler.com/llms.txt.
+
+---
+
+# Introduction
+
+Source: https://shaduler.com/docs
+
+shaduler is a **time-grid primitive** for shadcn/ui — like TanStack Table for time-based data. It hands you composable primitives that already inherit your shadcn theme and leaves drag, resize, and range-select as opt-in hooks you wire up only when you need them.
+
+## When to use shaduler
+
+- Resource-allocation views (technicians × hours, rooms × hours, machines × hours)
+- Daily / weekly schedule UIs (booking, salons, clinics, classrooms)
+- Internal admin dashboards where you need full control over rendering
+- Apps already on shadcn/ui where importing a heavy calendar library feels wrong
+
+## Design philosophy
+
+1. **Primitives first.** Fifteen sub-components (`Shaduler`, `ShadulerHeader`, `ShadulerGrid`, …) compose into the layout you want. No black-box monolith.
+2. **Headless interactions.** Drag, resize, and range-select live in three opt-in hooks (`useShadulerTaskResize`, `useShadulerTaskDrag`, `useShadulerRangeSelect`). Display-only mode is one render away.
+3. **shadcn theme native.** Every color is a CSS variable. Every primitive carries a `data-slot` for theming hooks. Tasks render as standard shadcn variants (`default`, `secondary`, `outline`, `destructive`, …).
+4. **Time-of-day grid.** Y axis is always time. Multi-day events live in the separate `ShadulerAllDayStrip`. Cross-midnight events split at the data layer.
+
+## Quick taste
+
+<Preview>
+  <QuickTastePreview />
+</Preview>
+
+Everything in one file — primitives, the calculator helper, the data types:
+
+```tsx
+import {
+  Shaduler,
+  ShadulerContent,
+  ShadulerColumnsHeader,
+  ShadulerColumnHeader,
+  ShadulerCorner,
+  ShadulerGrid,
+  ShadulerTimeColumn,
+  ShadulerCells,
+  ShadulerTasksOverlay,
+  calculateShadulerData,
+} from '@/components/ui/shaduler'
+```
+
+Define the visible range and row height once — every primitive that needs them
+reads from the same constants:
+
+```tsx
+const START_HOUR = 8       // grid begins at 08:00
+const END_HOUR = 19        // grid ends at 19:00 (exclusive)
+const HOUR_HEIGHT_PX = 60  // pixel height per 60-min row
+
+const columns = [
+  { id: 'a', label: 'Resource A' },
+  { id: 'b', label: 'Resource B' },
+]
+
+const tasks = [
+  { id: 1, column: 'a', name: 'Morning sync', startTime: '09:00', endTime: '10:00' },
+  { id: 2, column: 'b', name: 'Lunch',        startTime: '12:00', endTime: '13:00' },
+]
+
+const calc = calculateShadulerData(
+  columns,
+  tasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+)
+```
+
+Compose the layout — primitives wrap each other; nothing magical:
+
+```tsx
+<Shaduler>
+  <ShadulerContent>
+    <ShadulerColumnsHeader gridTemplateColumns={calc.gridTemplateColumns}>
+      <ShadulerCorner />
+      {columns.map((c, i) => (
+        <ShadulerColumnHeader key={c.id} column={c} columnIndex={i} />
+      ))}
+    </ShadulerColumnsHeader>
+
+    <ShadulerGrid
+      gridTemplateColumns={calc.gridTemplateColumns}
+      gridTemplateRows={calc.gridTemplateRows}
+    >
+      <ShadulerTimeColumn startTime={START_HOUR} endTime={END_HOUR} />
+      <ShadulerCells
+        rows={calc.rows}
+        columns={columns}
+        hourHeight={HOUR_HEIGHT_PX}
+      />
+      <ShadulerTasksOverlay
+        taskPositions={calc.taskPositions}
+        columns={columns}
+        startHour={START_HOUR}
+        endHour={END_HOUR}
+      />
+    </ShadulerGrid>
+  </ShadulerContent>
+</Shaduler>
+```
+
+Continue with [Installation](/docs/installation) →
+
+---
+
+# Installation
+
+Source: https://shaduler.com/docs/installation
+
+## Prerequisites
+
+- A shadcn/ui project (Tailwind CSS, `cn` util at `@/lib/utils`).
+- React 19 (shaduler uses the modern function-component + ref-as-prop pattern).
+- Tailwind CSS v4 (uses `@theme inline` and CSS variables — `--primary`, `--ring`, `--radius`, etc.).
+
+If you've already initialised shadcn (`shadcn@latest init`), you're set.
+
+## Add the component
+
+Pick your package manager:
+
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
+  <Tab value="pnpm">
+    ```bash
+    pnpm dlx shadcn@latest add https://shaduler.com/r/shaduler.json
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    npx shadcn@latest add https://shaduler.com/r/shaduler.json
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn dlx shadcn@latest add https://shaduler.com/r/shaduler.json
+    ```
+  </Tab>
+  <Tab value="bun">
+    ```bash
+    bunx --bun shadcn@latest add https://shaduler.com/r/shaduler.json
+    ```
+  </Tab>
+</Tabs>
+
+This drops a single file at `components/ui/shaduler.tsx` and installs `class-variance-authority` if it isn't already present.
+
+## Verify
+
+Render a tiny example to confirm it works:
+
+```tsx
+import { Shaduler } from '@/components/ui/shaduler'
+
+export default function Test() {
+  return (
+    <div className="h-[400px]">
+      <Shaduler>{/* ... */}</Shaduler>
+    </div>
+  )
+}
+```
+
+If your shadcn theme is set up, the border, background, and rounding should already match.
+
+## What you get
+
+One file, ~1700 LOC, exporting:
+
+- **Primitives** (15): `Shaduler`, `ShadulerHeader`, `ShadulerContent`, `ShadulerGrid`, `ShadulerColumnsHeader`, `ShadulerColumnHeader`, `ShadulerCorner`, `ShadulerTimeColumn`, `ShadulerTimeSlot`, `ShadulerCell`, `ShadulerCells`, `ShadulerTask`, `ShadulerTasksOverlay`, `ShadulerAllDayStrip`, `ShadulerAllDayTask`
+- **Pure helpers** (8): `calculateShadulerData`, `calculateAllDayPositions`, `generateRows`, `generateHours`, `groupTasksByColumn`, `formatTime`, `timeToMinutes`, `minutesToTime`
+- **Hooks** (3): `useShadulerTaskResize`, `useShadulerTaskDrag`, `useShadulerRangeSelect`
+- **Variants + helpers**: `shadulerTaskVariants`, `composeShadulerTaskProps`
+
+Continue with [Anatomy](/docs/anatomy) →
+
+---
+
+# Anatomy
+
+Source: https://shaduler.com/docs/anatomy
+
+The component file exposes 15 primitives that compose into your scheduler. The expected nesting is:
+
+```tsx
+<Shaduler>
+  <ShadulerHeader>...optional toolbar...</ShadulerHeader>
+  <ShadulerContent>
+    <ShadulerColumnsHeader gridTemplateColumns={calc.gridTemplateColumns}>
+      <ShadulerCorner />
+      {columns.map((c, i) => (
+        <ShadulerColumnHeader key={c.id} column={c} columnIndex={i} />
+      ))}
+    </ShadulerColumnsHeader>
+
+    {/* Optional: multi-day all-day events */}
+    <ShadulerAllDayStrip
+      columns={columns}
+      tasks={allDayEvents}
+      gridTemplateColumns={calc.gridTemplateColumns}
+    />
+
+    <ShadulerGrid
+      gridTemplateColumns={calc.gridTemplateColumns}
+      gridTemplateRows={calc.gridTemplateRows}
+    >
+      <ShadulerTimeColumn rows={calc.rows} startTime={8} endTime={19} />
+      <ShadulerCells rows={calc.rows} columns={columns} hourHeight={60} />
+      <ShadulerTasksOverlay
+        taskPositions={calc.taskPositions}
+        columns={columns}
+        startHour={8}
+        endHour={19}
+      />
+    </ShadulerGrid>
+  </ShadulerContent>
+</Shaduler>
+```
+
+## Primitives
+
+### Layout
+
+- **`Shaduler`** — root wrapper. Applies the shadcn-themed border, background, and rounded card. Carries `data-slot="shaduler"` for theming hooks. Accepts any `<div>` props.
+- **`ShadulerHeader`** — optional sticky top strip for toolbars (date picker, view switcher). No default content; pass children. Skip it if you don't need one.
+- **`ShadulerContent`** — scroll wrapper. Holds everything below the header and owns the vertical / horizontal overflow.
+- **`ShadulerGrid`** — the CSS grid that owns column and row tracks. Pass `gridTemplateColumns` and `gridTemplateRows` from `calculateShadulerData(...)`.
+
+### Header row
+
+- **`ShadulerColumnsHeader`** — sticky horizontal strip above the grid. Holds the corner cell plus one header per resource. Accepts either `columns` (renders defaults) or children for full control.
+- **`ShadulerColumnHeader`** — one header cell, takes a `ShadulerColumn` and `columnIndex`. Renders `column.label` by default; pass children to customize the markup.
+- **`ShadulerCorner`** — sticky top-left freeze cell (above the time column, left of the column headers). Empty by default.
+
+### Time axis
+
+- **`ShadulerTimeColumn`** — sticky-left column with hour labels. Pass `calculations.rows` for partial-row support, or `startTime` / `endTime` for simple integer-hour ranges. `timeFormat='12h'` and BCP 47 `locale` switch between 24h/12h and locale-aware formatting via `Intl.DateTimeFormat`.
+- **`ShadulerTimeSlot`** — one row inside the time column. Usually generated by `ShadulerTimeColumn`; render it directly only if you need to opt out of the default iteration.
+
+### Cells (background grid)
+
+- **`ShadulerCell`** — one background cell at `(columnIndex, hourIndex)`. Wire `onCellPointerDown` to react to clicks — the handler receives `{ hour, minute, column }` already snapped to `timeInterval` (default 15 minutes).
+- **`ShadulerCells`** — convenience iterator. Pass `rows` + `columns` + `hourHeight` and it renders a `<ShadulerCell>` for every (row, column) pair. Use `cellProps` to spread shared props onto every cell (e.g. `useShadulerRangeSelect().getCellProps()`); `getCellPropsFor` is the per-cell escape hatch.
+
+### Tasks
+
+- **`ShadulerTask`** — one positioned task. Reads `position` from `calculateShadulerData(...).taskPositions` and absolute-positions itself inside `<ShadulerTasksOverlay>`. Supports `variant` (`default` / `secondary` / `outline` / `destructive`), plus the gesture wires `onResizeStart`, `onTaskDragStart`, `isDragging`, `isSelecting`, and `dragHandleOnly` for touch UX.
+- **`ShadulerTasksOverlay`** — pointer-transparent layer that spans the resource columns. Pass `taskPositions` and either children (custom render) or `columns` (default `<ShadulerTask>` per item). Children can be a function `(taskPositions, columns) => ReactNode` for fine-grained control.
+
+### All-day strip
+
+- **`ShadulerAllDayStrip`** — optional row between the columns header and the hourly grid for multi-day events (vacations, workshops, holidays). Lane assignment is computed automatically via `calculateAllDayPositions(columns, tasks)`. Pass children for custom rendering, or let it default to `<ShadulerAllDayTask>` per item.
+- **`ShadulerAllDayTask`** — one bar inside the strip. Reads its placement from an `AllDayPosition`. Pass `onClick` to make it interactive.
+
+Continue with [Hooks](/docs/hooks) →
+
+---
+
+# Hooks
+
+Source: https://shaduler.com/docs/hooks
+
+Drag, resize, and range-select live in three opt-in hooks. Each returns small `getXProps(task)` helpers that you spread onto `<ShadulerTask>` or `<ShadulerCell>` — the visual is yours, the gesture math is theirs.
+
+None of them own task state. Updates flow back through your props on the next render.
+
+## `useShadulerTaskResize`
+
+Drag the bottom edge of a task to change its `endTime`. A resize handle appears at the bottom of the task when `onResizeStart` is wired.
+
+```tsx
+const { getResizeProps, resizingTaskId } = useShadulerTaskResize({
+  hourHeight: HOUR_HEIGHT_PX,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onResize: (id, { endTime }) => {
+    // optional: render a live preview while the user drags
+  },
+  onResizeEnd: (id, { endTime }) =>
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, endTime } : t)),
+    ),
+})
+
+<ShadulerTask {...getResizeProps(task)} task={task} /* ... */ />
+```
+
+`onResize` fires every pointermove; commit to durable state in `onResizeEnd`. `minDurationMinutes` (default 15) rejects too-short drags. `timeInterval` (default 15) snaps the result.
+
+## `useShadulerTaskDrag`
+
+Drag a task to a new column and time. Duration is preserved.
+
+```tsx
+const gridRef = React.useRef<HTMLDivElement>(null)
+
+const { getTaskDragProps, draggingTaskId } = useShadulerTaskDrag({
+  gridRef,
+  columns,
+  hourHeight: HOUR_HEIGHT_PX,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onDragEnd: (id, { column, startTime, endTime }) =>
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === id ? { ...t, column, startTime, endTime } : t,
+      ),
+    ),
+})
+
+<ShadulerGrid ref={gridRef} /* ... */>
+  <ShadulerTask {...getTaskDragProps(task)} task={task} /* ... */ />
+</ShadulerGrid>
+```
+
+**Click vs drag.** Pointer movement under `clickThresholdPx` (default 4) counts as a click — `onDragEnd` doesn't fire and the task's own `onClick` runs normally. Past the threshold the gesture is a real drag, and the synthetic click after release is suppressed automatically.
+
+**Touch.** Set `dragHandleOnly` on `<ShadulerTask>` and mark an inner element with `data-shaduler-drag-handle`. The task body then stays scrollable on touch devices, and drag is initiated from the handle only.
+
+## `useShadulerRangeSelect`
+
+Drag across cells inside one column to define a time range — the building block for drag-to-create.
+
+```tsx
+const gridRef = React.useRef<HTMLDivElement>(null)
+
+const { getCellProps, activeRange, isSelecting } = useShadulerRangeSelect({
+  gridRef,
+  hourHeight: HOUR_HEIGHT_PX,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onSelect: (range) => openNewTaskDialog(range),
+})
+
+<ShadulerCells
+  rows={calc.rows}
+  columns={columns}
+  hourHeight={HOUR_HEIGHT_PX}
+  cellProps={getCellProps()}
+/>
+```
+
+While the user drags, `activeRange` is `{ columnId, startMinutes, endMinutes }` — use it to render a preview overlay. `onSelectChange` fires every pointermove; `onSelect` fires once on release.
+
+## `composeShadulerTaskProps`
+
+Combine resize, drag, and selection state into a single props object before spreading on `<ShadulerTask>`:
+
+```tsx
+const taskProps = composeShadulerTaskProps(
+  resizeEnabled && getResizeProps(task),
+  dragEnabled && getTaskDragProps(task),
+  { isSelecting },
+)
+
+<ShadulerTask {...taskProps} task={task} /* ... */ />
+```
+
+First defined `onResizeStart` / `onTaskDragStart` wins; `isDragging` / `isSelecting` OR across sources. Falsy entries are skipped, so the `enabled && hookProps` shortcut works without extra branching.
+
+See the [Full interactivity](/docs/recipes/full-interactivity) recipe for a complete working example that wires all three hooks together.
+
+---
+
+# Recipes
+
+Source: https://shaduler.com/docs/recipes
+
+_Common patterns — display-only, click-to-create, drag, resize, week view, all-day, and more._
+
+Each recipe is a self-contained example showing one capability of the component. They all share the same primitives — only the data, hooks, and rendering vary.
+
+## Patterns
+
+- **[Display-only](/docs/recipes/display-only)** — pure read-only render, no hooks
+- **[Click-to-create](/docs/recipes/click-to-create)** — single-click creates a 1-hour task at the clicked minute
+- **[Full interactivity](/docs/recipes/full-interactivity)** — drag + resize + drag-to-create combined via composeShadulerTaskProps
+- **[Week view](/docs/recipes/week-view)** — columns are days of the week instead of resources
+- **[Grouped columns](/docs/recipes/grouped-columns)** — two-row header where outer cells span groups (days × resources)
+- **[Many resources](/docs/recipes/many-resources)** — 100 columns with horizontal scroll and `minColumnWidth`
+- **[Custom render](/docs/recipes/custom-render)** — extend ShadulerTaskData and render task children with status icons
+- **[Locales](/docs/recipes/locales)** — `formatTime` with BCP 47 locale via Intl.DateTimeFormat
+- **[Partial hours](/docs/recipes/partial-hours)** — salon range 08:30 → 18:30 via `startMinute`/`endMinute`
+- **[Custom row labels](/docs/recipes/custom-labels)** — render shift names instead of clock times
+- **[All-day events](/docs/recipes/all-day)** — multi-day strip above the hourly grid
+- **[Cross-midnight events](/docs/recipes/cross-midnight)** — split helper that turns a single event into two visual rows
+- **[Full customization](/docs/recipes/full-customization)** — kitchen-sink demo combining view modes, date navigation, add/edit dialogs, overlap detection, and all three interaction hooks
+- **[Animated loop](/docs/recipes/animated-loop)** — choreographed storyboard with enter / exit / slide / colour-change transitions; the grid reads like a short video
+
+Click any recipe for a live preview and the source.
+
+---
+
+# Display-only
+
+Source: https://shaduler.com/docs/recipes/display-only
+
+_Pure read-only render — no hooks, no interaction, just composed primitives._
+
+The simplest possible shaduler usage. No interaction hooks, no `onCellPointerDown`, no resize handles — just primitives that turn data into a calendar.
+
+<Preview>
+  <DemoDisplayOnly />
+</Preview>
+
+```tsx
+import { useMemo } from 'react'
+import {
+  Shaduler,
+  ShadulerCell,
+  ShadulerColumnHeader,
+  ShadulerColumnsHeader,
+  ShadulerContent,
+  ShadulerCorner,
+  ShadulerGrid,
+  ShadulerTasksOverlay,
+  ShadulerTimeColumn,
+  calculateShadulerData,
+} from '@/components/ui/shaduler'
+
+const START_HOUR = 8        // grid begins at 08:00
+const END_HOUR = 19         // grid ends at 19:00 (exclusive)
+const HOUR_HEIGHT_PX = 60   // pixel height per 60-min row
+
+const columns = [
+  { id: 'a', label: 'Resource A' },
+  { id: 'b', label: 'Resource B' },
+  { id: 'c', label: 'Resource C' },
+]
+
+const tasks = [
+  { id: 1, column: 'a', name: 'Morning sync', startTime: '09:00', endTime: '10:00' },
+  { id: 2, column: 'b', name: 'Design review', startTime: '10:00', endTime: '11:30' },
+  { id: 3, column: 'c', name: 'Deep work', startTime: '14:00', endTime: '17:00' },
+]
+
+export function DisplayOnly() {
+  const calc = useMemo(
+    () =>
+      calculateShadulerData(
+        columns,
+        tasks,
+        START_HOUR,
+        END_HOUR,
+        HOUR_HEIGHT_PX,
+      ),
+    [],
+  )
+  return (
+    <Shaduler>
+      <ShadulerContent>
+        <ShadulerColumnsHeader gridTemplateColumns={calc.gridTemplateColumns}>
+          <ShadulerCorner />
+          {columns.map((c, i) => (
+            <ShadulerColumnHeader key={c.id} column={c} columnIndex={i} />
+          ))}
+        </ShadulerColumnsHeader>
+        <ShadulerGrid
+          gridTemplateColumns={calc.gridTemplateColumns}
+          gridTemplateRows={calc.gridTemplateRows}
+        >
+          <ShadulerTimeColumn
+            startTime={START_HOUR}
+            endTime={END_HOUR}
+            timeFormat="24h"
+          />
+          {calc.hours.flatMap((hour, hourIndex) =>
+            columns.map((column, colIndex) => (
+              <ShadulerCell
+                key={`${column.id}-${hour}`}
+                hour={hour}
+                column={column}
+                columnIndex={colIndex}
+                hourIndex={hourIndex}
+                hourHeight={HOUR_HEIGHT_PX}
+              />
+            )),
+          )}
+          <ShadulerTasksOverlay
+            taskPositions={calc.taskPositions}
+            columns={columns}
+            startHour={START_HOUR}
+            endHour={END_HOUR}
+            hourHeight={HOUR_HEIGHT_PX}
+          />
+        </ShadulerGrid>
+      </ShadulerContent>
+    </Shaduler>
+  )
+}
+```
+
+Tasks render as default shadcn-styled pills. To replace them, pass children to `ShadulerTasksOverlay` (see [Custom render](/docs/recipes/custom-render)).
+
+---
+
+# Click-to-create
+
+Source: https://shaduler.com/docs/recipes/click-to-create
+
+_Single-click on a cell creates a 1-hour task at the clicked minute, snapped to a 15-min grid._
+
+The smallest amount of interactivity: hand `ShadulerCell` an `onCellPointerDown` and create a task at the clicked minute. No hooks needed.
+
+<Preview>
+  <DemoClickToCreate />
+</Preview>
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 19
+const NEW_EVENT_DURATION_MIN = 60
+
+const handleCellDown = (
+  _e: React.PointerEvent<HTMLDivElement>,
+  info: { hour: number; minute: number; column?: ShadulerColumn },
+) => {
+  if (!info.column) return
+  const start = info.hour * 60 + info.minute
+  const end = Math.min(start + NEW_EVENT_DURATION_MIN, END_HOUR * 60)
+  setTasks((prev) => [
+    ...prev,
+    {
+      id: `created-${Date.now()}`,
+      column: info.column!.id,
+      name: 'New event',
+      startTime: minutesToTime(start),
+      endTime: minutesToTime(end),
+    },
+  ])
+}
+
+// pass it on the cell:
+<ShadulerCell ... onCellPointerDown={handleCellDown} />
+```
+
+`info.minute` is the snapped offset within the hour (15-min grid by default — control with `timeInterval` on the cell). For drag-to-create across multiple cells, switch to `useShadulerRangeSelect` ([Full interactivity](/docs/recipes/full-interactivity)).
+
+---
+
+# Full interactivity
+
+Source: https://shaduler.com/docs/recipes/full-interactivity
+
+_Drag, resize, and drag-to-create combined via composeShadulerTaskProps._
+
+The three opt-in hooks — `useShadulerTaskResize`, `useShadulerTaskDrag`, `useShadulerRangeSelect` — combined. Toggle each one off independently to see what it contributes.
+
+<Preview>
+  <DemoFullInteractivity />
+</Preview>
+
+## How the three hooks compose
+
+Everything ships from the same `@/components/ui/shaduler` file:
+
+```tsx
+import {
+  ShadulerCells,
+  ShadulerColumnHeader,
+  ShadulerColumnsHeader,
+  ShadulerCorner,
+  ShadulerGrid,
+  ShadulerTask,
+  ShadulerTasksOverlay,
+  ShadulerTimeColumn,
+  calculateShadulerData,
+  composeShadulerTaskProps,
+  minutesToTime,
+  useShadulerRangeSelect,
+  useShadulerTaskDrag,
+  useShadulerTaskResize,
+} from '@/components/ui/shaduler'
+```
+
+Each hook returns a `getXxxProps(task)` function. `composeShadulerTaskProps(...)` merges their outputs — calling each handler in turn while keeping `isDragging` flags consistent.
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 19
+const HOUR_HEIGHT_PX = 60
+const TIME_INTERVAL_MIN = 15  // snap drag/resize to 15-min grid
+
+const { getResizeProps } = useShadulerTaskResize({
+  hourHeight: HOUR_HEIGHT_PX,
+  timeInterval: TIME_INTERVAL_MIN,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onResize: updateTask,
+  onResizeEnd: updateTask,
+})
+
+const { getTaskDragProps } = useShadulerTaskDrag({
+  gridRef,
+  columns,
+  hourHeight: HOUR_HEIGHT_PX,
+  timeInterval: TIME_INTERVAL_MIN,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onDrag: updateTask,
+  onDragEnd: updateTask,
+})
+
+const { activeRange, isSelecting, getCellProps } = useShadulerRangeSelect({
+  gridRef,
+  hourHeight: HOUR_HEIGHT_PX,
+  timeInterval: TIME_INTERVAL_MIN,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onSelect: (range) => { /* create task */ },
+})
+
+// inside the overlay's render-prop:
+const props = composeShadulerTaskProps(
+  resizeOn && getResizeProps(pos.task),
+  dragOn  && getTaskDragProps(pos.task),
+  { isSelecting },
+)
+return <ShadulerTask {...props} task={pos.task} position={pos} ... />
+```
+
+`getCellProps()` is spread onto every cell so the underlying drag-to-create works:
+
+```tsx
+<ShadulerCells
+  hours={calc.hours}
+  columns={columns}
+  hourHeight={HOUR_HEIGHT_PX}
+  cellProps={{ timeInterval: TIME_INTERVAL_MIN, ...getCellProps() }}
+/>
+```
+
+The hooks ignore each other's pointer interactions — when a resize handle is dragged, drag-to-move and range-select stay quiet.
+
+---
+
+# Week view
+
+Source: https://shaduler.com/docs/recipes/week-view
+
+_Same component, columns are days of the week instead of resources._
+
+Nothing about shaduler is "resource-flavored" — columns are just labeled lanes. Use day names for a personal/team weekly schedule.
+
+<Preview>
+  <DemoWeekView />
+</Preview>
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 19
+const HOUR_HEIGHT_PX = 60
+const TIME_COLUMN_WIDTH_PX = 64  // narrower left gutter when columns are tight
+
+const weekColumns = [
+  { id: 'mon', label: 'Mon' },
+  { id: 'tue', label: 'Tue' },
+  { id: 'wed', label: 'Wed' },
+  { id: 'thu', label: 'Thu' },
+  { id: 'fri', label: 'Fri' },
+  { id: 'sat', label: 'Sat' },
+  { id: 'sun', label: 'Sun' },
+]
+
+const weekTasks = [
+  { id: 'w1', column: 'mon', name: 'Standup', startTime: '09:00', endTime: '09:30' },
+  { id: 'w2', column: 'mon', name: 'Sprint planning', startTime: '10:00', endTime: '12:00' },
+  { id: 'w3', column: 'tue', name: 'Customer call', startTime: '11:00', endTime: '12:00' },
+  // …
+]
+
+const calc = calculateShadulerData(
+  weekColumns,
+  weekTasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+  { timeColumnWidth: TIME_COLUMN_WIDTH_PX },
+)
+```
+
+Pass the same `timeColumnWidth` both to `calculateShadulerData` and to `ShadulerTasksOverlay` so they stay aligned.
+
+For multi-day events that span several columns at once, layer `ShadulerAllDayStrip` on top — see [All-day events](/docs/recipes/all-day).
+
+---
+
+# Grouped columns
+
+Source: https://shaduler.com/docs/recipes/grouped-columns
+
+_Two-row header — outer cells span groups (days, regions, teams), inner cells are individual columns._
+
+The header strip is just CSS Grid, so you can render two rows of headers inside the same `ShadulerColumnsHeader`. Pass `gridTemplateRows: 'auto auto'` via `style`, then place group cells in row 1 with a `grid-column` span and the leaf columns in row 2.
+
+<Preview>
+  <DemoGroupedColumns />
+</Preview>
+
+The body grid still sees one flat list of columns (`mon-a`, `mon-b`, …, `wed-c`). Grouping is purely a header-rendering concern — drag, overlap, and scrolling all keep working with no extra config.
+
+```tsx
+const dayGroups = [
+  { id: 'mon', label: 'Mon 9 Dec' },
+  { id: 'tue', label: 'Tue 10 Dec' },
+  { id: 'wed', label: 'Wed 11 Dec' },
+]
+const resourcesPerDay = ['A', 'B', 'C']
+
+// Compound IDs keep the grid columns independent.
+const columns = dayGroups.flatMap((day) =>
+  resourcesPerDay.map((r) => ({
+    id: `${day.id}-${r.toLowerCase()}`,
+    label: r,
+  })),
+)
+
+// Tasks reference the compound id:
+const tasks = [
+  { id: 1, column: 'mon-a', name: 'Standup', startTime: '09:00', endTime: '09:30' },
+  { id: 2, column: 'wed-c', name: '1:1',     startTime: '16:00', endTime: '16:30' },
+]
+```
+
+```tsx
+<ShadulerColumnsHeader
+  gridTemplateColumns={calc.gridTemplateColumns}
+  style={{ gridTemplateRows: 'auto auto' }}
+>
+  {/* Corner spans both rows so it stays aligned with the time column body. */}
+  <ShadulerCorner style={{ gridRow: '1 / 3' }} />
+
+  {/* Row 1 — one cell per group, spanning all its leaf columns. */}
+  {dayGroups.map((day, i) => (
+    <div
+      key={day.id}
+      className="flex items-center justify-center border-b border-r px-4 py-2 text-sm font-semibold"
+      style={{
+        gridColumn: `${i * resourcesPerDay.length + 2} / span ${resourcesPerDay.length}`,
+        gridRow: 1,
+      }}
+    >
+      {day.label}
+    </div>
+  ))}
+
+  {/* Row 2 — individual leaf columns. */}
+  {columns.map((column, index) => (
+    <ShadulerColumnHeader
+      key={column.id}
+      column={column}
+      columnIndex={index}
+      style={{ gridRow: 2 }}
+    />
+  ))}
+</ShadulerColumnsHeader>
+```
+
+The key bit is `gridColumn: "<start> / span <size>"` — the start position is `groupIndex × groupSize + 2` (skip the time column), and `span <size>` covers all leaf columns inside that group.
+
+For three days × three resources the math is `i × 3 + 2`. If group sizes vary, compute a running offset instead.
+
+---
+
+# Many resources / horizontal scroll
+
+Source: https://shaduler.com/docs/recipes/many-resources
+
+_100 resources with minColumnWidth — the grid scrolls horizontally instead of squishing._
+
+When you have more columns than horizontal space, set `minColumnWidth` and the calculator will sum widths and let CSS handle horizontal overflow. The time column stays sticky.
+
+<Preview>
+  <DemoManyResources />
+</Preview>
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 19
+const HOUR_HEIGHT_PX = 60
+const TIME_COLUMN_WIDTH_PX = 72   // left gutter
+const MIN_COLUMN_WIDTH_PX = 140   // each lane is ≥ 140px; below that, scroll
+const COLUMN_COUNT = 100
+const SNAP_MIN = 15
+
+const cols = Array.from({ length: COLUMN_COUNT }, (_, i) => ({
+  id: `r${i + 1}`,
+  label: `Tech ${i + 1}`,
+}))
+
+const calc = calculateShadulerData(
+  cols,
+  tasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+  {
+    timeColumnWidth: TIME_COLUMN_WIDTH_PX,
+    minColumnWidth: MIN_COLUMN_WIDTH_PX,
+  },
+)
+```
+
+Total grid width here is `100 × 140 + 72 = 14072px` — the wrapper scrolls horizontally and the time column stays sticky on the left.
+
+## Generating sample data
+
+For a demo at this scale, the tasks are generated with a **seeded PRNG** so that server-side render and client hydration produce the same list (`Math.random()` would mismatch and trigger a hydration warning).
+
+```tsx
+function makeRng(seed: number) {
+  let s = seed >>> 0
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0
+    let t = s
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+const rng = makeRng(42)
+const END_MIN = END_HOUR * 60
+
+// Sequential cursor: each task starts after the previous + a small gap,
+// so tasks inside a column never overlap. Stops early if we'd exceed END_HOUR.
+const tasks = cols.flatMap((col) => {
+  const count = 2 + Math.floor(rng() * 4) // up to 2–5 tasks per column
+  const out: ShadulerTaskData[] = []
+  let cursorMin = START_HOUR * 60
+  for (let j = 0; j < count; j++) {
+    const gapMin = Math.floor(rng() * 7) * SNAP_MIN          // 0–90 min gap
+    const durationMin = (2 + Math.floor(rng() * 5)) * SNAP_MIN // 30–90 min
+    cursorMin += gapMin
+    if (cursorMin + durationMin > END_MIN) break
+    out.push({
+      id: `${col.id}-t${j}`,
+      column: col.id,
+      name: TASK_NAMES[Math.floor(rng() * TASK_NAMES.length)],
+      startTime: minutesToTime(cursorMin),
+      endTime: minutesToTime(cursorMin + durationMin),
+    })
+    cursorMin += durationMin
+  }
+  return out
+})
+```
+
+Tasks scroll with the grid; column headers and the time column track via CSS sticky.
+
+---
+
+# Custom task rendering
+
+Source: https://shaduler.com/docs/recipes/custom-render
+
+_Extend the task type, render status icons, and apply dynamic Tailwind classes._
+
+`ShadulerTaskData` is an interface, not a concrete shape — extend it with whatever fields your app needs. `calculateShadulerData<T>` is generic, so the extended fields survive all the way to the render-prop closure (no casts).
+
+<Preview>
+  <DemoCustomRender />
+</Preview>
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 19
+const HOUR_HEIGHT_PX = 60
+
+type StatusTask = ShadulerTaskData & {
+  status: 'approved' | 'pending' | 'rejected'
+}
+
+const statusStyles: Record<StatusTask['status'], { wrapper: string; icon: ... }> = {
+  approved: { wrapper: 'bg-emerald-500/10 ...', icon: CheckCircle2 },
+  pending:  { wrapper: 'bg-amber-500/10 ...',   icon: Clock3 },
+  rejected: { wrapper: 'bg-rose-500/10 ...',    icon: XCircle },
+}
+
+const calc = calculateShadulerData<StatusTask>(
+  columns,
+  statusTasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+)
+```
+
+Pass children to `ShadulerTasksOverlay` to take over rendering. The default pill is replaced — wrap your own JSX inside `<ShadulerTask>` (so positioning still happens automatically).
+
+```tsx
+<ShadulerTasksOverlay taskPositions={calc.taskPositions} columns={columns} ...>
+  {(positions, cols) =>
+    (cols ?? []).map((column, colIndex) =>
+      (positions[column.id] ?? []).map((pos) => {
+        const task = pos.task // typed as StatusTask
+        const style = statusStyles[task.status]
+        const Icon = style.icon
+        return (
+          <ShadulerTask
+            key={task.id}
+            task={task}
+            position={pos}
+            columnIndex={colIndex}
+            totalColumns={(cols ?? []).length}
+          >
+            <div className={cn('rounded-md border px-2 py-1.5', style.wrapper)}>
+              <Icon className="size-3" />
+              <span>{task.name}</span>
+            </div>
+          </ShadulerTask>
+        )
+      }),
+    )
+  }
+</ShadulerTasksOverlay>
+```
+
+`pos.task` keeps its `StatusTask` typing thanks to the generic on `calculateShadulerData<StatusTask>`.
+
+---
+
+# Locales
+
+Source: https://shaduler.com/docs/recipes/locales
+
+_formatTime takes a BCP 47 locale and delegates to Intl.DateTimeFormat._
+
+The same data, three different locales. `ShadulerTimeColumn` accepts `locale` (BCP 47) and `timeFormat` (`'12h' | '24h'`); both forward to `formatTime` which is a thin wrapper over `Intl.DateTimeFormat`.
+
+<Preview>
+  <DemoLocales />
+</Preview>
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 17
+
+<ShadulerTimeColumn
+  startTime={START_HOUR}
+  endTime={END_HOUR}
+  timeFormat="12h"
+  locale="en-US"
+/>
+```
+
+`formatTime` is also exported — call it directly when you render time strings outside the time column (e.g. inside custom task content).
+
+```tsx
+import { formatTime } from '@/components/ui/shaduler'
+
+formatTime(540, { format: '24h', locale: 'de-DE' })  // → "09:00"
+formatTime(540, { format: '12h', locale: 'en-US' })  // → "9:00 AM"
+formatTime(540, { format: '24h', locale: 'ja-JP' })  // → "9:00"
+```
+
+If you skip `locale`, the user's environment default is used.
+
+---
+
+# Partial-hour range
+
+Source: https://shaduler.com/docs/recipes/partial-hours
+
+_Salon hours 08:30 → 18:30 via startMinute / endMinute. Drag, resize, drag-to-create all keep working._
+
+When the schedule starts or ends mid-hour (salon, clinic, restaurant booking), pass `startMinute` and `endMinute` to `calculateShadulerData`. The grid renders shorter rows at the top and bottom; everything else (overlay positioning, drag, resize) stays mathematically correct.
+
+<Preview>
+  <DemoPartialHours />
+</Preview>
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 18
+const START_MINUTE = 30   // grid starts at 08:30
+const END_MINUTE = 30     // grid ends at 18:30
+const HOUR_HEIGHT_PX = 60
+const TIME_INTERVAL_MIN = 15
+
+const calc = calculateShadulerData(
+  columns,
+  tasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+  { startMinute: START_MINUTE, endMinute: END_MINUTE },
+)
+```
+
+Pass the same `startMinute` / `endMinute` to every primitive that needs to know the range:
+
+```tsx
+<ShadulerTimeColumn
+  startTime={START_HOUR} endTime={END_HOUR}
+  startMinute={START_MINUTE} endMinute={END_MINUTE}
+  rows={calc.rows}
+/>
+<ShadulerCells rows={calc.rows} columns={columns} ... />
+<ShadulerTasksOverlay
+  startHour={START_HOUR} endHour={END_HOUR}
+  startMinute={START_MINUTE} endMinute={END_MINUTE}
+  ...
+/>
+```
+
+The interaction hooks accept the same options:
+
+```tsx
+useShadulerTaskResize({
+  startHour: START_HOUR, endHour: END_HOUR,
+  startMinute: START_MINUTE, endMinute: END_MINUTE,
+  hourHeight: HOUR_HEIGHT_PX,
+  timeInterval: TIME_INTERVAL_MIN,
+  ...
+})
+useShadulerTaskDrag({ /* same range options */ ... })
+useShadulerRangeSelect({ /* same range options */ ... })
+```
+
+Snapping (`timeInterval`) still works — a 15-min interval will land on `:00`, `:15`, `:30`, `:45` regardless of where the range starts.
+
+---
+
+# Custom row labels
+
+Source: https://shaduler.com/docs/recipes/custom-labels
+
+_Render shift names instead of clock times — the time-domain math is untouched._
+
+The vertical axis is still time-based — tasks still use `HH:MM` strings, snapping still works. But the time column can render anything you want: shift names, breakpoints, milestone markers.
+
+<Preview>
+  <DemoCustomLabels />
+</Preview>
+
+Pass children to `ShadulerTimeColumn` to take over rendering. Each child should be a `ShadulerTimeSlot` so positioning still aligns to the rows.
+
+```tsx
+const HOUR_HEIGHT_PX = 60
+
+<ShadulerTimeColumn rows={calc.rows}>
+  {calc.rows.map((row, i) => {
+    const { label, tone } = shiftFor(row.hour) // your mapping
+    return (
+      <ShadulerTimeSlot
+        key={row.startMinutes}
+        hour={row.hour}
+        durationMinutes={row.durationMinutes}
+        hourIndex={i}
+        hourHeight={HOUR_HEIGHT_PX}
+      >
+        <div className={cn('absolute …', tone)}>
+          {label}
+        </div>
+      </ShadulerTimeSlot>
+    )
+  })}
+</ShadulerTimeColumn>
+```
+
+Tasks below still position from `startTime`/`endTime` — drag, resize, snapping all keep working because they reason about minutes, not labels.
+
+---
+
+# All-day events
+
+Source: https://shaduler.com/docs/recipes/all-day
+
+_Multi-day strip above the hourly grid. Overlapping events stack into lanes._
+
+Vacations, multi-day workshops, holidays — events that span entire days. They live in their own strip above the hourly grid (Google Calendar / Outlook style), keeping the hourly grid clean for time-of-day events.
+
+<Preview>
+  <DemoAllDay />
+</Preview>
+
+The all-day strip is a separate primitive (`ShadulerAllDayStrip`) that you opt into when your data has multi-day events. Render it between the columns header and the hourly grid.
+
+```tsx
+const START_HOUR = 8
+const END_HOUR = 18
+const HOUR_HEIGHT_PX = 60
+const TIME_COLUMN_WIDTH_PX = 72
+
+type VacationTask = ShadulerAllDayTaskData & {
+  category: 'vacation' | 'workshop' | 'holiday'
+}
+
+const allDayEvents: VacationTask[] = [
+  { id: 'pto-ana', name: 'Ana — PTO', startColumn: 'mon', endColumn: 'wed', category: 'vacation' },
+  { id: 'workshop', name: 'React workshop', startColumn: 'tue', endColumn: 'thu', category: 'workshop' },
+]
+
+const calc = calculateShadulerData(
+  columns,
+  hourlyTasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+  { timeColumnWidth: TIME_COLUMN_WIDTH_PX },
+)
+```
+
+```tsx
+<ShadulerColumnsHeader gridTemplateColumns={calc.gridTemplateColumns}>
+  <ShadulerCorner />
+  {columns.map(...)}
+</ShadulerColumnsHeader>
+
+<ShadulerAllDayStrip<VacationTask>
+  columns={columns}
+  tasks={allDayEvents}
+  gridTemplateColumns={calc.gridTemplateColumns}
+>
+  {(positions) =>
+    positions.map((pos) => (
+      <ShadulerAllDayTask
+        key={pos.task.id}
+        position={pos}
+        className={categoryClass[pos.task.category]}
+      >
+        <span className="truncate">{pos.task.name}</span>
+      </ShadulerAllDayTask>
+    ))
+  }
+</ShadulerAllDayStrip>
+
+<ShadulerGrid ...>
+  {/* hourly grid as usual */}
+</ShadulerGrid>
+```
+
+Overlapping events stack into lanes automatically — `calculateAllDayPositions` (called internally by the strip) does a greedy lane assignment per event in input order.
+
+Pass `gridTemplateColumns` from `calc` so the strip aligns perfectly with the columns header above and the hourly grid below.
+
+---
+
+# Cross-midnight events
+
+Source: https://shaduler.com/docs/recipes/cross-midnight
+
+_A single canonical event split into two visual rows by a small helper. Click either half resolves to the same source._
+
+Shaduler is a **time-of-day** grid — its rows go 00:00 → 24:00. An event that crosses midnight (gala 22:00 → next-day 02:00) doesn't fit a single row. Solution: keep one canonical event in your data and **split it at the data layer** into two `ShadulerTaskData` rows.
+
+<Preview>
+  <DemoCrossMidnight />
+</Preview>
+
+Add a `canonicalId` field that points back to the source event. Both halves carry the same value — click either and you can dispatch one action to your real data.
+
+```tsx
+const START_HOUR = 0          // full day grid
+const END_HOUR = 24
+const HOUR_HEIGHT_PX = 24     // tight rows since we're showing 24 of them
+const TIME_COLUMN_WIDTH_PX = 64
+
+type CanonicalEvent = {
+  id: string
+  name: string
+  startDay: string  // ShadulerColumn id
+  startTime: string // 'HH:MM'
+  endDay: string
+  endTime: string
+}
+
+type SplitTask = ShadulerTaskData & { canonicalId: string }
+
+function splitAcrossMidnight(event: CanonicalEvent): SplitTask[] {
+  if (event.startDay === event.endDay) {
+    return [{ id: event.id, canonicalId: event.id, column: event.startDay,
+              name: event.name, startTime: event.startTime, endTime: event.endTime }]
+  }
+  return [
+    {
+      id: `${event.id}__part-1`,
+      canonicalId: event.id,
+      column: event.startDay,
+      name: `${event.name} →`,
+      startTime: event.startTime,
+      endTime: '23:59',
+    },
+    {
+      id: `${event.id}__part-2`,
+      canonicalId: event.id,
+      column: event.endDay,
+      name: `← ${event.name}`,
+      startTime: '00:00',
+      endTime: event.endTime,
+    },
+  ]
+}
+
+// Then feed Shaduler the split list:
+const tasks = events.flatMap(splitAcrossMidnight)
+const calc = calculateShadulerData<SplitTask>(
+  columns,
+  tasks,
+  START_HOUR,
+  END_HOUR,
+  HOUR_HEIGHT_PX,
+  { timeColumnWidth: TIME_COLUMN_WIDTH_PX },
+)
+```
+
+In your `onClick` handler, read `pos.task.canonicalId` to find the source event:
+
+```tsx
+<ShadulerTask
+  task={pos.task}
+  position={pos}
+  onClick={() => handleClickSource(pos.task.canonicalId)}
+  ...
+/>
+```
+
+The library stays time-of-day; the splitting lives entirely in user code. For multi-day events spanning more than two days (e.g. a 3-day workshop), use [`ShadulerAllDayStrip`](/docs/recipes/all-day) instead — those events live above the hourly grid.
+
+---
+
+# Full customization
+
+Source: https://shaduler.com/docs/recipes/full-customization
+
+_Real-world recipe combining view modes, date navigation, working-hour shading, typed tasks with icons, resource and type filters, drag/resize, range-select with dialog, fullscreen, and overlap + non-working-hours warnings._
+
+This is the kitchen-sink demo — every shaduler feature wired up the way you'd ship it in a real app:
+
+- **24-hour grid with working-hour shading** — `START_HOUR=0`, `END_HOUR=24`, but cells outside `workStart`/`workEnd` get a striped pattern. The working window itself is editable from the toolbar.
+- **View toggle** — 1 / 3 / 7 days, all running through one shaduler instance with compound column ids (`<date>::<resource>`).
+- **Date navigation** — prev / next arrows step by the active view's day count, a calendar Popover opens for picking a specific day, and a Today button snaps back.
+- **Stacked headers** — switch between a single-row layout (day + name) and a two-row layout (day above, resource below) using `gridTemplateRows: 'auto auto'` on `ShadulerColumnsHeader`.
+- **Typed tasks with icons** — each task carries a `type` (`meeting` / `call` / `focus` / `lunch` / `break`). The task body is replaced with a colored card showing the type icon, name, and time range.
+- **Resource + type filters** — Popover checklists in the toolbar with a live count badge (`2/3`); the grid re-derives columns and visible tasks.
+- **Editable working hours** — a Popover with two `Select` dropdowns updates `workStart`/`workEnd`; the striped cells and the warning predicate follow.
+- **Custom corner** — `ShadulerCorner` holds an Add button that opens the same dialog the form-based recipes use.
+- **Drag / resize / drag-to-create** — the three hooks composed via `composeShadulerTaskProps`. Drag-to-create opens the dialog with the range pre-filled instead of inserting straight away.
+- **Overlap + non-working warnings** — on save we collect all issues (overlap, out-of-hours) and surface an `AlertDialog` with the list before committing.
+- **Click to edit** — clicking a task opens the dialog populated with its current values, with a Delete button.
+- **Fullscreen toggle** — top-right button (or `Esc` to exit). Positions the whole demo fixed over the viewport at `z-60`.
+
+<Preview>
+  <DemoFullCustomization />
+</Preview>
+
+## Compound column ids
+
+Each column id encodes the date **and** the resource (`2026-05-10::anna`). Shaduler still sees a flat list — the grouping is purely how we render headers and partition tasks.
+
+```tsx
+function buildColumnId(dateKey: string, resourceId: string): string {
+  return `${dateKey}::${resourceId}`
+}
+function parseColumnId(id: string | number) {
+  const [dateKey, resourceId] = String(id).split('::')
+  return { dateKey, resourceId }
+}
+
+const columns = dates.flatMap((d) =>
+  RESOURCES.map((r) => ({
+    id: buildColumnId(toKey(d), r.id),
+    label: r.name,
+  })),
+)
+```
+
+## Add button inside `ShadulerCorner`
+
+The corner is just a slot — drop whatever React you want inside.
+
+```tsx
+<ShadulerCorner
+  style={stackedHeaders ? { gridRow: `1 / ${headerRows + 1}` } : undefined}
+>
+  <Button size="sm" onClick={() => setNewTaskDraft(defaultDraft())}>
+    <Plus className="size-3.5" /> Add
+  </Button>
+</ShadulerCorner>
+```
+
+When the headers are two rows tall, the corner spans both rows via `gridRow`.
+
+## Drag-to-create opens the dialog instead of inserting
+
+By default `useShadulerRangeSelect.onSelect` is where you would push a new task. Push to a `draft` state instead and the dialog handles the rest.
+
+```tsx
+const { activeRange, isSelecting, getCellProps } = useShadulerRangeSelect({
+  gridRef,
+  hourHeight: HOUR_HEIGHT_PX,
+  timeInterval: TIME_INTERVAL_MIN,
+  startHour: START_HOUR,
+  endHour: END_HOUR,
+  onSelect: (range) => {
+    const { dateKey, resourceId } = parseColumnId(range.columnId)
+    setNewTaskDraft({
+      name: '',
+      dateKey,
+      resourceId,
+      startTime: minutesToTime(range.startMinutes),
+      endTime: minutesToTime(range.endMinutes),
+    })
+  },
+})
+```
+
+The user can edit the name / resource / time before pressing Save, or cancel the whole thing without polluting state.
+
+## Combined warnings (overlap + non-working hours)
+
+The commit path collects all issues into a single list and surfaces them in one AlertDialog — "Save anyway" runs the original commit, Cancel drops it.
+
+```tsx
+function isOutsideWorkingHours(c, workStart, workEnd) {
+  const s = timeToMinutes(c.startTime)
+  const e = timeToMinutes(c.endTime)
+  return s < workStart * 60 || e > workEnd * 60
+}
+
+const collectWarnings = (candidate) => {
+  const out = []
+  const conflict = detectOverlap(tasks, candidate)
+  if (conflict) {
+    out.push(`Conflicts with "${conflict.name}" (${conflict.startTime} – ${conflict.endTime}).`)
+  }
+  if (isOutsideWorkingHours(candidate, workStart, workEnd)) {
+    out.push(`Time falls outside working hours (${pad(workStart)}:00 – ${pad(workEnd)}:00).`)
+  }
+  return out
+}
+
+const commitNewTask = (draft) => {
+  const task = buildTask(draft)
+  const insert = () => {
+    setTasks((prev) => [...prev, task])
+    setNewTaskDraft(null)
+    setWarningPrompt(null)
+  }
+  const warnings = collectWarnings(task)
+  if (warnings.length > 0) {
+    setWarningPrompt({ warnings, onConfirm: insert })
+    return
+  }
+  insert()
+}
+```
+
+Drag and resize **don't** trigger the prompt — they fire dozens of events per second and a confirm dialog mid-drag would be unusable. If you want strict conflict prevention there, gate the final `onResizeEnd` / `onDragEnd` instead of every intermediate tick.
+
+## Working-hour shading
+
+The grid spans the full 24 hours, but cells outside `workStart`–`workEnd` get a diagonal-stripe background so they read as "outside hours" without being hidden. Use a manual cell loop instead of `ShadulerCells` so you can branch per cell:
+
+```tsx
+{calc.hours.flatMap((hour, hourIndex) =>
+  columns.map((column, colIndex) => {
+    const isNonWorking = hour < workStart || hour >= workEnd
+    return (
+      <ShadulerCell
+        key={`${column.id}-${hour}`}
+        hour={hour}
+        column={column}
+        columnIndex={colIndex}
+        hourIndex={hourIndex}
+        hourHeight={HOUR_HEIGHT_PX}
+        timeInterval={TIME_INTERVAL_MIN}
+        className={cn(
+          isNonWorking &&
+            'bg-[repeating-linear-gradient(135deg,var(--color-muted)_0_6px,transparent_6px_12px)] opacity-70',
+        )}
+        {...getCellProps()}
+      />
+    )
+  }),
+)}
+```
+
+## Typed tasks (icon + colored card)
+
+`ShadulerTask` accepts children — the default pill is replaced with your own card. Keep one `Record<Type, { icon, className }>` map and render per-type:
+
+```tsx
+const TASK_TYPES = [
+  { id: 'meeting', label: 'Meeting', icon: Users,    className: 'bg-blue-500/15 text-blue-700 …' },
+  { id: 'call',    label: 'Call',    icon: Phone,    className: 'bg-emerald-500/15 …' },
+  { id: 'focus',   label: 'Focus',   icon: Target,   className: 'bg-violet-500/15 …' },
+  { id: 'lunch',   label: 'Lunch',   icon: Utensils, className: 'bg-amber-500/15 …' },
+  { id: 'break',   label: 'Break',   icon: Coffee,   className: 'bg-stone-500/15 …' },
+]
+
+<ShadulerTask {...props} className="bg-transparent p-0">
+  <div className={cn('flex h-full flex-col gap-0.5 rounded-md border px-2 py-1', cfg.className)}>
+    <div className="flex items-center gap-1.5">
+      <Icon className="size-3 shrink-0" />
+      <span className="truncate text-xs font-semibold">{task.name}</span>
+    </div>
+    <span className="text-[10px] opacity-80">
+      {task.startTime} – {task.endTime}
+    </span>
+  </div>
+</ShadulerTask>
+```
+
+`bg-transparent p-0` on `ShadulerTask` itself removes the default padding/background so the card fills the slot.
+
+## Resource + type filters
+
+Each filter is a Popover with a checklist. State is a `Set<string>`; toggling adds / removes ids. Both Sets feed into the column derivation and task filter:
+
+```tsx
+const [visibleResources, setVisibleResources] = useState<Set<string>>(
+  () => new Set(RESOURCES.map((r) => r.id)),
+)
+const [visibleTypes, setVisibleTypes] = useState<Set<TaskType>>(
+  () => new Set(TASK_TYPES.map((t) => t.id)),
+)
+
+const columns = dates.flatMap((d) =>
+  RESOURCES
+    .filter((r) => visibleResources.has(r.id))
+    .map((r) => ({ id: buildColumnId(toKey(d), r.id), label: r.name })),
+)
+
+const visibleTasks = tasks.filter((t) =>
+  keys.has(t.dateKey) &&
+  visibleResources.has(t.resourceId) &&
+  visibleTypes.has(t.type),
+)
+```
+
+Filtering resources changes the grid template; filtering types just hides tasks. Both are computed memos — no extra data plumbing.
+
+## Editable working hours
+
+Two `Select` dropdowns (0–23 for start, 1–24 for end) inside a Popover. An Apply button commits both at once so the grid doesn't re-shade mid-drag of the dropdown:
+
+```tsx
+function HoursPopover({ workStart, workEnd, onChange }) {
+  const [s, setS] = useState(workStart)
+  const [e, setE] = useState(workEnd)
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+          <Clock className="size-3.5" />
+          {pad(workStart)}:00 – {pad(workEnd)}:00
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent>
+        {/* two Selects for s / e */}
+        <Button onClick={() => onChange(s, e)} disabled={e <= s}>Apply</Button>
+      </PopoverContent>
+    </Popover>
+  )
+}
+```
+
+## Filtering visible tasks per view
+
+The component stores **all** tasks across all dates. We slice down to only the dates visible right now before calling `calculateShadulerData`:
+
+```tsx
+const visibleTasks = useMemo(() => {
+  const keys = new Set(dates.map(toKey))
+  return tasks.filter((t) => keys.has(t.dateKey))
+}, [tasks, dates])
+```
+
+Switching from 1-day to 7-day view just re-runs the memo with more keys — no data layer changes.
+
+## Fullscreen toggle
+
+State + conditional positioning is enough — no portal needed. `position: fixed; inset: 0; z-index: 60` takes the whole demo over the viewport. Escape returns to normal.
+
+```tsx
+const [fullscreen, setFullscreen] = useState(false)
+
+useEffect(() => {
+  if (!fullscreen) return
+  const onKey = (e: KeyboardEvent) =>
+    e.key === 'Escape' && setFullscreen(false)
+  window.addEventListener('keydown', onKey)
+  return () => window.removeEventListener('keydown', onKey)
+}, [fullscreen])
+
+<div
+  className={cn(
+    fullscreen && 'fixed inset-0 z-[60] flex flex-col bg-background p-4',
+  )}
+>
+  {/* toolbar */}
+  <div className={cn(fullscreen ? 'min-h-0 flex-1' : 'h-[520px]')}>
+    <Shaduler>…</Shaduler>
+  </div>
+</div>
+```
+
+Dialogs (TaskDialog, AlertDialog) already render in a Radix Portal, so they appear above the fullscreen layer without extra plumbing.
+
+---
+
+# Animated loop
+
+Source: https://shaduler.com/docs/recipes/animated-loop
+
+_Looped storyboard with enter / exit / slide / color-change animations — the grid reads like a short video._
+
+A choreographed reel that makes shaduler feel alive on a marketing surface. Tasks enter from the left, change status (colour-shift in place), slide to a new time slot, and exit — one beat at a time. The state machine is a simple array of frames; `motion` drives the transitions.
+
+<Preview>
+  <LandingHeroDemo />
+</Preview>
+
+## Install `motion`
+
+The transitions below are driven by the [motion](https://motion.dev) package (the v12 successor to framer-motion). shaduler itself doesn't pull it in — install it alongside the component:
+
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add motion
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    npm install motion
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn add motion
+    ```
+  </Tab>
+  <Tab value="bun">
+    ```bash
+    bun add motion
+    ```
+  </Tab>
+</Tabs>
+
+```tsx
+import { AnimatePresence, motion } from 'motion/react'
+```
+
+## Storyboard, not state
+
+Instead of randomly mutating tasks, define an explicit script. Each frame is the **complete** task list at that point — when the array advances, only the items that differ animate.
+
+```ts
+const FRAME_MS = 2500
+
+const STANDUP = { id: 'standup', column: 'a', name: 'Daily standup', startTime: '09:00', endTime: '10:00', status: 'scheduled' }
+const DESIGN  = { id: 'design',  column: 'b', name: 'Design review', startTime: '09:30', endTime: '11:00', status: 'scheduled' }
+const FOCUS   = { id: 'focus',   column: 'c', name: 'Focus block',   startTime: '10:00', endTime: '12:30', status: 'scheduled' }
+
+const STORY = [
+  [],                                                                    // 0  empty
+  [STANDUP],                                                              // 1  enter: standup
+  [STANDUP, DESIGN],                                                      // 2  enter: design
+  [{ ...STANDUP, status: 'in_progress' }, DESIGN],                        // 3  status flip
+  [{ ...STANDUP, status: 'in_progress' }, DESIGN, FOCUS],                 // 4  enter: focus
+  [{ ...STANDUP, status: 'done' }, DESIGN, FOCUS],                        // 5  status flip
+  [DESIGN, FOCUS],                                                        // 6  exit: standup
+  [{ ...DESIGN, status: 'in_progress' }, FOCUS],                          // 7  status flip
+  [{ ...DESIGN, status: 'in_progress' }, { ...FOCUS, startTime: '11:30', endTime: '14:00' }],  // 8  slide DOWN
+  // … and so on, ending with [] so the loop restarts cleanly
+]
+
+function useFrame() {
+  const [i, setI] = React.useState(0)
+  React.useEffect(() => {
+    const id = window.setInterval(() => setI((n) => (n + 1) % STORY.length), FRAME_MS)
+    return () => window.clearInterval(id)
+  }, [])
+  return STORY[i]
+}
+```
+
+**One change per frame.** Two simultaneous animations (e.g. a status flip and an enter at the same beat) read as noise. Splitting them into separate frames keeps the user's eye on a single moving target.
+
+## Bypass `ShadulerTask` for full enter / exit control
+
+`ShadulerTask` is great for static rendering, but `<AnimatePresence>` needs `motion`-aware children with stable keys so it can run exit transitions before unmount. So replicate the positioning math (`left = (colIndex / total) * 100%`, `width = 90 / total`) inside a custom card and skip `ShadulerTask`.
+
+```tsx
+<ShadulerTasksOverlay {...calc} columns={COLUMNS} startHour={9} endHour={14} hourHeight={72}>
+  {(positions, cols) => (
+    <AnimatePresence>
+      {(cols ?? []).flatMap((column, colIndex) => {
+        const total = (cols ?? []).length
+        return (positions[column.id] ?? []).map((pos) => (
+          <FancyTaskCard
+            key={pos.task.id}
+            task={pos.task}
+            top={pos.top}
+            height={pos.height}
+            colIndex={colIndex}
+            totalCols={total}
+          />
+        ))
+      })}
+    </AnimatePresence>
+  )}
+</ShadulerTasksOverlay>
+```
+
+## The three animation systems, and which one owns what
+
+Three different mechanisms run side by side. Pick carefully — they fight if more than one tries to own the same property.
+
+| What animates | Driver | Why |
+|---|---|---|
+| `scaleX` (left → right reveal), `opacity` | `motion`'s `animate` + `<AnimatePresence>` | Only motion knows when a key is about to leave the tree, which is what we need for exit transitions. |
+| `top`, `height` (slide up / down) | `motion`'s `animate` (also) | `motion.div` rewrites inline `style` on every animation frame, so a CSS `transition` set on those properties on the same element gets swallowed. Letting motion drive them sidesteps that. |
+| `background-color`, `border-color`, `color` (status flip) | Plain CSS `transition` in `style` | Motion doesn't touch these, so a CSS transition fires reliably when the className swaps. Tailwind's `transition-colors` class **doesn't** work here because inline `style.transition` overrides it. |
+
+```tsx
+<motion.div
+  // top / height in initial = their target values, so a fresh mount
+  // doesn't slide down from 0; only scaleX + opacity animate on entry.
+  initial={{ scaleX: 0, opacity: 0, top, height }}
+  animate={{ scaleX: 1, opacity: 1, top, height }}
+  exit={{ scaleX: 0, opacity: 0 }}
+  transition={{
+    scaleX: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
+    opacity: { duration: 0.5 },
+    top: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
+    height: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
+  }}
+  style={{
+    position: 'absolute',
+    left: `${left}%`,
+    width: `${width}%`,
+    transformOrigin: 'left center', // anchor the scaleX reveal
+    transition: [
+      'background-color 0.7s ease-in-out',
+      'border-color 0.7s ease-in-out',
+      'color 0.7s ease-in-out',
+    ].join(', '),
+  }}
+  className={cn('rounded-lg border px-3 py-2 shadow-sm', tokens.card)}
+>
+  {/* card body — name, time, status badge, avatar */}
+</motion.div>
+```
+
+## A few choices that matter
+
+- **Stable task `id`** across frames is what tells `<AnimatePresence>` "same element, just new props" — without it, every frame would unmount-remount and the slide / colour change would never get a chance to interpolate.
+- **`transformOrigin: 'left center'`** is what makes `scaleX: 0 → 1` look like an "unrolling" reveal rather than a centred zoom.
+
+---
+
+# Scope
+
+Source: https://shaduler.com/docs/comparison
+
+_shaduler is a resource × time grid with a bring-your-own philosophy._
+
+shaduler is a **resource × time grid** — columns are resources (people, rooms, machines), rows are hours of a day or week. That's the whole job.
+
+## What you get
+
+- Single file copy-paste, no NPM package to fight (`pnpm dlx shadcn add ...`).
+- Inherits your shadcn theme automatically — no CSS overrides.
+- Generic types preserve user-extended task data through render-prop closures.
+- Headless interaction hooks (drag, resize, drag-to-create) are opt-in — display-only is the default.
+- Built for React 19 + TS 5; modern function-component pattern.
+
+## Bring your own
+
+shaduler stays small on purpose. A few things you'll handle at the data layer or with your own UI:
+
+- **Month / agenda / year views.** shaduler renders one day or week at a time — anything zoomed-out is outside its scope.
+- **Recurring events.** Expand the rule into concrete instances upstream and pass them in.
+- **Timezones & DST.** Normalize timestamps before they reach the grid.
+- **Persistence, undo, conflict resolution.** The grid emits events; what you do with them is yours.
+
+## Still to come
+
+- Keyboard arrow navigation between cells (Tab through tasks already works).
+

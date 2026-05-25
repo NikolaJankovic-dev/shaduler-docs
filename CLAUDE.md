@@ -4,9 +4,9 @@
 
 Single-repo home of the shaduler component, its tests, the shadcn registry
 artifact, and the Fumadocs documentation site. Live at
-**https://shaduler.vercel.app/** — auto-deploys on push to `main`.
+**https://shaduler.com/** — auto-deploys on push to `main`.
 
-Install URL: `https://shaduler.vercel.app/r/shaduler.json`.
+Install URL: `https://shaduler.com/r/shaduler.json`.
 
 ## Repo layout (key paths)
 

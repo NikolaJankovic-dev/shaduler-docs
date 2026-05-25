@@ -1,0 +1,40 @@
+# shaduler
+
+> A composable scheduler grid for shadcn/ui. Resource × time layout (columns = resources or days, rows = hours), single-file copy-paste install via the shadcn CLI, opt-in headless hooks for drag / resize / range-select, and theme tokens that follow your existing shadcn variables.
+
+shaduler is one `.tsx` file (~1700 lines) that exports primitives, pure helpers, and three interaction hooks. There is no NPM package; users install it via `pnpm dlx shadcn@latest add https://shaduler.com/r/shaduler.json`. The same registry endpoint accepts `?preset=<code>` to bake a chosen palette / accent / radius into the install in one command.
+
+Stack: React 19, Tailwind v4, TypeScript 5, Next.js 16 (docs site only). Component itself is framework-agnostic React.
+
+## Docs
+
+- [Installation](https://shaduler.com/docs/installation): one-command setup via the shadcn CLI, with tabs for pnpm / npm / yarn / bun.
+- [Anatomy](https://shaduler.com/docs/anatomy): the 15 primitives, what each renders, and how they compose into a grid.
+- [Hooks](https://shaduler.com/docs/hooks): `useShadulerTaskResize`, `useShadulerTaskDrag`, `useShadulerRangeSelect` — opt-in, headless, framework-agnostic gesture controllers.
+- [Scope](https://shaduler.com/docs/comparison): bring-your-own philosophy. What shaduler is and isn't.
+
+## Recipes
+
+- [Display-only](https://shaduler.com/docs/recipes/display-only): minimal read-only render, no hooks.
+- [Click-to-create](https://shaduler.com/docs/recipes/click-to-create): single click creates a 1-hour task.
+- [Full interactivity](https://shaduler.com/docs/recipes/full-interactivity): drag + resize + drag-to-create combined via `composeShadulerTaskProps`.
+- [Week view](https://shaduler.com/docs/recipes/week-view): columns = days of the week.
+- [Grouped columns](https://shaduler.com/docs/recipes/grouped-columns): two-row header (days × resources).
+- [Many resources](https://shaduler.com/docs/recipes/many-resources): 100 columns with horizontal scroll via `minColumnWidth`.
+- [Custom render](https://shaduler.com/docs/recipes/custom-render): extend `ShadulerTaskData` and render task children directly.
+- [Locales](https://shaduler.com/docs/recipes/locales): `formatTime` with BCP 47 locales via `Intl.DateTimeFormat`.
+- [Partial hours](https://shaduler.com/docs/recipes/partial-hours): salon range 08:30 → 18:30 via `startMinute` / `endMinute`.
+- [Custom row labels](https://shaduler.com/docs/recipes/custom-labels): shift names instead of clock times.
+- [All-day events](https://shaduler.com/docs/recipes/all-day): multi-day strip above the hourly grid.
+- [Cross-midnight events](https://shaduler.com/docs/recipes/cross-midnight): `splitAcrossMidnight` helper that turns a single event into two visual rows.
+- [Full customization](https://shaduler.com/docs/recipes/full-customization): kitchen-sink demo combining views, navigation, dialogs, overlap detection, and all three interaction hooks.
+- [Animated loop](https://shaduler.com/docs/recipes/animated-loop): choreographed storyboard with enter / exit / slide / colour-change transitions using `motion` and `<AnimatePresence>`.
+
+## Theme picker
+
+- [Create](https://shaduler.com/create): pick palette / accent / radius / style / font / heading. The URL stays a shareable `?preset=<code>` that round-trips with ui.shadcn.com/create. "Create Project" produces the shadcn CLI command that installs shaduler with the theme baked in.
+
+## Registry
+
+- [shaduler.json](https://shaduler.com/r/shaduler.json): canonical registry artifact consumed by `shadcn add`.
+- [themed.json](https://shaduler.com/r/themed.json): dynamic endpoint — takes `?preset=<code>`, decodes, and merges the resulting CSS variables into `cssVars` so `shadcn add` writes the theme to the user's `globals.css`.

@@ -12,7 +12,7 @@ A composable scheduler grid for shadcn/ui — primitives plus opt-in headless ho
 Inside any shadcn/ui project:
 
 ```bash
-pnpm dlx shadcn@latest add https://shaduler.vercel.app/r/shaduler.json
+pnpm dlx shadcn@latest add https://shaduler.com/r/shaduler.json
 ```
 
 One file lands at `components/ui/shaduler.tsx`. No NPM package, no extra
@@ -29,4 +29,4 @@ Built for React 19 + Tailwind v4. Works on touch.
 
 ---
 
-**[Full docs →](https://shaduler.vercel.app/)** for setup walkthrough, primitive reference, hooks, recipes, and a live theme picker.
+**[Full docs →](https://shaduler.com/)** for setup walkthrough, primitive reference, hooks, recipes, and a live theme picker.

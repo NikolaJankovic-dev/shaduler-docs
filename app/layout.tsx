@@ -15,9 +15,30 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'shaduler',
+  // Lets Next.js resolve relative URLs (OG, canonical, sitemap, robots…)
+  // against the production domain instead of the request host.
+  metadataBase: new URL('https://shaduler.com'),
+  title: {
+    default: 'shaduler',
+    template: '%s — shaduler',
+  },
   description:
     'A composable scheduler grid for shadcn/ui — primitives + headless hooks for resource-allocation, booking, and daily-schedule UIs.',
+  openGraph: {
+    title: 'shaduler',
+    description:
+      'A composable scheduler grid for shadcn/ui — primitives + headless hooks for resource-allocation, booking, and daily-schedule UIs.',
+    url: 'https://shaduler.com',
+    siteName: 'shaduler',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'shaduler',
+    description:
+      'A composable scheduler grid for shadcn/ui — primitives + headless hooks.',
+  },
 }
 
 export default function RootLayout({

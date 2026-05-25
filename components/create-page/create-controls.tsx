@@ -626,7 +626,7 @@ export function CreateProjectDialog({
   const baseUrl =
     typeof window !== 'undefined'
       ? window.location.origin
-      : 'https://shaduler.vercel.app'
+      : 'https://shaduler.com'
   const registryUrl = `${baseUrl}/r/themed.json?preset=${presetCode}`
   const commands: Record<string, string> = {
     pnpm: `pnpm dlx shadcn@latest add ${registryUrl}`,

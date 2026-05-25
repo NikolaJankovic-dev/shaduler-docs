@@ -4,12 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/build-llms-full.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
     "registry:build": "shadcn build",
+    "llms:build": "node scripts/build-llms-full.mjs",
     "record:hero": "node scripts/record-hero.mjs",
     "postinstall": "fumadocs-mdx"
   },
